@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Line of Succession – TOON Mono</title>
+
+  <!-- IBM Plex Mono from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" type="text/css" href="qvd_succession.css">
+  <script type="module" src="qvd_succession.js"></script>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <h1 class="header-title">Line of Succession to British Throne</h1>
+      <p class="header-desc">
+        <br>
+        The line of succession to the British throne is governed by The Act of Settlement (1701) and stated that only Protestant heirs of Princess Sophia, granddaughter of James I, may succeed to the British throne. 
+        Neither Roman Catholics, nor those who marry a Roman Catholic, nor those born out of wedlock, may remain in the line of succession. 
+        Under common law, the crown was passed on by male primogeniture under which younger sons succeed before their elder sisters.
+      </p>
+    </div>
+
+    <div class="header-buttons">
+      <a href="qvd_succession.html" class="header-btn">Line of Succession</a>
+      <a href="qvd_tree.html" class="header-btn">Family Tree</a>
+    </div>
+  </header>
+
+  <div class="main-content">
+    <div class="toggle-container">
+      <label class="switch">
+        <input type="checkbox" id="toggleSwitch" />
+        <span class="slider"></span>
+      </label>
+      <span id="toggleLabel" class="toggle-label">Excluded People Hidden</span>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead><tr id="thead-row"></tr></thead>
+        <tbody id="succession-body"></tbody>
+      </table>
+    </div>
+
+    <div class="pager-container">
+      <button id="prevPageBtn" class="pager-btn" style="display:none;">Previous 100</button>
+      <button id="nextPageBtn" class="pager-btn">Next 100</button>
+    </div>
+  </div>
+</body>
+</html>

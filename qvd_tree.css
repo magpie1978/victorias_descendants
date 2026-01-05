@@ -1,0 +1,382 @@
+:root {
+    /* defines CSS variables used throughout the page */
+    --bg:#0C1834;
+    --panel:#101A3A;
+    --accent:#EADFAF;   /* lines, borders, highlights */
+    --text:#FDF2C7;     /* primary text */
+    --muted:#D8CFA0;    /* secondary text */
+    --glass:#1B2748;    /* glassy overlays / dropdowns */
+    --header-h:240px;   /* taller header to fit text + controls */
+  }
+
+  /* tells the browser to include padding and borders inside width/height calculations (makes layout more predictable */
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+
+  
+  body {
+    margin: 0;  /* removes the default margins */
+    overflow: hidden;  /* hides scrollbars on the main body */
+    background: var(--bg);  /* sets the background to dark navy */
+    color: var(--text);  /* sets the default text colour to yellow */
+    font-family: 'IBM Plex Mono', monospace;  /* applies the default font */
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+
+  /* defines the fixed bat at the top of the page */
+  header {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 24px;
+    padding: 22px 34px;
+    background: var(--glass);
+    box-shadow: 0 6px 14px rgba(0,0,0,.65);
+    z-index: 300;
+    height: var(--header-h);
+    border-bottom: 1px solid rgba(234,223,175,0.5);
+  }
+
+  /* the left-hans side of the header block */
+  .header-left { max-width: 70%; }
+  
+   /* header title i.e. "Queen Victoria's descendanets" */
+   .header-title {
+    margin: 0 0 8px 0;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: .2px;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+
+  /* header description i.e. short paragraph under header */
+  .header-desc {
+    margin: 0;
+    color: var(--muted);
+    font-size: .95rem;
+    line-height: 1.45;
+  }
+
+  /* Controls directly below the paragraph text i.e person drop-down and search bar*/
+  .header-controls {
+    display:flex;
+    gap:10px;
+    margin-top:20px; /* space between text and dropdown/search */
+    flex-wrap:wrap;
+    max-width:100%;
+  }
+
+  /* positions the top-right navigation buttons */
+  .header-buttons{
+    position:absolute;
+    top:16px;
+    right:34px;
+    display:flex;
+    gap:10px;
+  }
+
+  /* styles the top-right navigation buttons */
+  .header-btn{
+    background:transparent;
+    color:var(--text);
+    border:1px solid var(--accent);
+    padding:8px 14px;
+    border-radius:10px;
+    font-weight:600;
+    cursor:pointer;
+    text-decoration:none;
+    font-size:0.8rem;
+    text-transform:uppercase;
+    letter-spacing:0.13em;
+    transition:
+      background 0.25s ease,
+      box-shadow 0.25s ease,
+      color 0.25s ease,
+      transform 0.15s ease;
+  }
+
+  .header-btn:hover{
+    background:var(--accent);
+    color:var(--bg);
+    box-shadow:0 0 10px rgba(234,223,175,0.7);
+    transform:translateY(-1px);
+  }
+
+  /* Styles the Branch Dropdown menu */
+  #branchwrap{
+    min-width: 240px;
+    background: rgba(12,24,60,.9);
+    border:1px solid rgba(234,223,175,.35);
+    border-radius:12px;
+    padding:6px 10px;
+    box-shadow:0 10px 30px rgba(0,0,0,.55), 0 0 0 1px rgba(234,223,175,.12) inset;
+    display:flex; align-items:center;
+  }
+
+  /* styles the branch dropdown select list */
+  #branchSelect {
+    width:100%; border:0; outline:none; background:transparent;
+    color: var(--accent); font-size:14px; line-height:22px;
+  }
+
+  /* Search */
+  /* styles the search bar container */
+  #searchwrap{
+    position:relative;
+    background: rgba(12,24,60,.9);
+    border:1px solid rgba(234,223,175,.35);
+    border-radius:12px;
+    padding:8px 12px;
+    box-shadow:0 10px 30px rgba(0,0,0,.55), 0 0 0 1px rgba(234,223,175,.12) inset;
+    backdrop-filter: blur(4px);
+    width: 400px;
+    flex: 0 0 auto;
+  }
+
+  /* styles the text input of the search bar */
+  #search{
+    width:100%; border:0; outline:none; background:transparent;
+    color:var(--text); font-size:16px; line-height:22px;
+  }
+
+  /* sets the default text in the search bar */
+  #search::placeholder {
+    color: var(--accent);   /* the yellow tone used sitewide */
+    opacity: 1;             /* ensure browsers don’t fade it */
+  }
+
+  /* Suggestions dropdown */
+  /* styles the drop-down search input */
+  #suggest{
+    position:absolute; top:100%; left:0; right:0; margin-top:6px;
+    background:var(--glass);
+    border:1px solid rgba(234,223,175,.35);
+    border-radius:12px; overflow:hidden; display:none;
+    z-index: 310;
+    box-shadow:0 16px 40px rgba(0,0,0,.65);
+  }
+
+  /* makes the suggestions visible when JS adds the show class */
+  #suggest.show{ display:block; }
+  .sug{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; cursor:pointer;
+    color:var(--text);
+  }
+  .sug:hover, .sug.active{ background:#22305F; }
+  .s-name{ font-weight:700; }
+  .s-title{ color:var(--muted); font-size:12px; }
+
+  /* defined the scrollable area under the header */
+  #scroll {
+    position:absolute; left:0; right:0; bottom:0; top:var(--header-h);
+    overflow: auto;
+  }
+
+  /* world is the canvas that houses all of the family tree content */
+  #world  {
+    position:relative;
+    width:2400px;
+    height:1600px;
+    --gs:10px;
+    transform-origin: top left; /* actual scale is set in JS via WORLD_SCALE */
+  }
+
+  /* applies the graph paper grid */
+  #world.grid {
+    background-image:
+      linear-gradient(to right, rgba(234,223,175,.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(234,223,175,.08) 1px, transparent 1px);
+    background-size: var(--gs) var(--gs);
+    background-position: 0 0;
+  }
+
+  /* The SVG layer for drawing lines between people */
+  #connector {
+    position:absolute; inset:0; width:100%; height:100%;  /* Positioned on top of the world, full width & height */
+    pointer-events:none; z-index:0; /*8 so lines don’t block mouse clicks on cards */
+  }
+
+  /* Common styles for all connector lines */
+  .edge,.bus,.stem,.drop,.partner {
+    stroke:var(--accent);
+    stroke-width:2;
+    fill:none;
+    vector-effect:non-scaling-stroke;
+  }
+
+  .partner { stroke-width:2; opacity:.9; }  /* Slightly thinner and more transparent lines for partner connection */
+  .dotted { stroke-dasharray: 6 6; } /* Defines a dashed line pattern (used for illegitimate child links, etc.). */
+
+  /* the card representing each person */
+  .person {
+    position:absolute; z-index:1;
+    display:grid; grid-template-columns:1fr 2fr;
+    width:360px; height:120px;
+    background:var(--panel);
+    border:0.8px solid var(--accent);
+    border-radius:14px; overflow:hidden;
+    user-select:none; cursor:pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,.55), 0 0 0 1px rgba(234,223,175,.18) inset;
+    transition:
+      transform .18s ease,
+      box-shadow .22s ease,
+      border-color .22s ease,
+      background-color .22s ease,
+      filter .22s ease;
+  }
+
+  .person:hover {
+    transform: translateY(-4px) scale(1.015);
+    background-color:#162145;
+    border-color: rgba(234,223,175,0.85);
+    box-shadow: 0 14px 28px rgba(0,0,0,.8),
+                0 0 0 1px rgba(234,223,175,.35) inset,
+                0 0 22px rgba(234,223,175,.25);
+    filter: saturate(1.05);
+  }
+
+  .person:focus-visible {
+    outline:2px solid rgba(234,223,175,.85);
+    outline-offset:3px;
+  }
+
+  .avatar { width:100%; height:100%; background:#111523; overflow:hidden; }
+  .avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+  .details {
+    display:flex; flex-direction:column;
+    justify-content:center;
+    padding:12px 16px;
+  }
+  
+  .name {
+    font-weight:600;
+    font-size:1.00rem;
+    color:var(--accent);
+  }
+
+  .title1 {
+    font-size:.8rem;
+    color:var(--muted);
+    margin-top:2px;
+  }
+
+  .title {
+    font-size:.8rem;
+    color:var(--muted);
+    margin-top:4px;
+  }
+
+  /* defines a short "ring" animation around a card when focussed */
+  @keyframes focusPulse {
+    0%   { box-shadow:0 0 0 0 rgba(234,223,175,.55); }
+    60%  { box-shadow:0 0 0 12px rgba(234,223,175,0); }
+    100% { box-shadow:0 0 0 0 rgba(234,223,175,0); }
+  }
+  .focus-flash { animation: focusPulse 1.1s ease-out 1; }
+
+  /* drawer is the left-hand side pop-out box */
+  #drawer {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    bottom: 0;
+    width: min(520px, 92vw);
+    z-index: 400;
+    transform: translateX(-105%);
+    transition: transform .28s ease;
+    pointer-events: none;
+  }
+
+  #drawer .drawer-content {
+    height: 100%;
+    background: #101628;
+    border-right: 1px solid rgba(234,223,175,.35);
+    box-shadow: 0 20px 60px rgba(0,0,0,.75);
+    padding: 18px 20px;
+    overflow: auto;
+  }
+
+  /* Hide the old heading entirely */
+  #drawer .drawer-content h2 { display: none; }
+
+  #drawer[open] {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .drawer-header {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .drawer-photo {
+    width: 96px; height: 96px; border-radius: 10px;
+    object-fit: cover;
+    background:#111523;
+    border:1px solid rgba(234,223,175,.45);
+  }
+
+  .drawer-name   {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .drawer-title1 { color: var(--muted); margin-top: 4px; }
+  .drawer-title2 { color: var(--muted); margin-top: 2px; }
+
+  .drawer-divider {
+    border: 0;
+    border-top: 1px solid rgba(234,223,175,.35);
+    margin: 16px 0;
+  }
+
+  .drawer-facts-line {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+    color: var(--text);
+  }
+
+  .fact-label {
+    color: var(--muted);
+    text-transform: lowercase;
+    letter-spacing: .2px;
+  }
+
+  .fact-value {
+    color: var(--text);
+  }
+
+  /* Biography block */
+  .drawer-bio {
+    margin-top: 16px;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: var(--muted);
+    white-space: pre-wrap; /* preserves line breaks from the biography field */
+  }
+
+  #backdrop {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 350;
+    background: rgba(0,0,0,.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .22s ease;
+  }
+
+  #backdrop[data-show="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
