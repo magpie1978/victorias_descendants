@@ -11,7 +11,6 @@ window.supabaseClient = supabase;
 var CARD_W = 360, CARD_H = 120, PADDING = 200;  /* defines the size of each person card */
 const WORLD_SCALE = 0.8; // 80% zoom for the tree canvas
 
-/*const FALLBACK_IMAGE = "https://i.pinimg.com/736x/3f/3c/f8/3f3cf824ceb39fa5dbd00aa986e25f54.jpg";*/
 const FALLBACK_IMAGE = "https://st4.depositphotos.com/9998432/22670/v/450/depositphotos_226700318-stock-illustration-person-gray-photo-placeholder-man.jpg";
 
 /* keeps everything in memory - people, parent-child lines, two-parent bus connectors, nextID (used if you ever add nodes) */
@@ -181,57 +180,6 @@ function groupTriEdges(){
 function ensureBusElems(k){ return { stem:ensureLine('stem-'+k,'stem'), bus:ensureLine('bus-'+k,'bus') }; }
 function ensureDropElem(k,cid){ return ensureLine('drop-'+k+'-'+cid,'drop'); }
 
-/*
-function updateBusGroup(key, group){
-  var p1=group.parents[0], p2=group.parents[1];
-  var R1=cardRect(p1), R2=cardRect(p2); if(!R1||!R2) return;
-  var mid={ x:(R1.cx+R2.cx)/2, y:(R1.cy+R2.cy)/2 };
-
-  var children=group.children.map(function(id){ return {id:id, r:cardRect(id)}; }).filter(function(o){return !!o.r;});
-  if(children.length===0) return;
-
-  if(children.length===1){
-    var r=children[0].r;
-    var anchorY = (r.topy >= mid.y) ? r.topy : r.bottomy;
-    var stem=ensureLine('stem-'+key,'stem');
-    stem.classList.remove('dotted');
-    stem.setAttribute('x1',mid.x); stem.setAttribute('y1',mid.y);
-    stem.setAttribute('x2',r.topx); stem.setAttribute('y2',anchorY);
-    removeById('bus-'+key);
-    svg.querySelectorAll('[id^="drop-'+key+'-"]').forEach(function(el){el.remove();});
-    return;
-  }
-
-  var xs=children.map(function(c){return c.r.topx;});
-  var topYs=children.map(function(c){return c.r.topy;});
-  var botYs=children.map(function(c){return c.r.bottomy;});
-  var GAP_ABOVE=24, GAP_BELOW=24, MIN_STEM=24;
-  var minTop=Math.min.apply(Math,topYs), maxBot=Math.max.apply(Math,botYs);
-  var allBelow = minTop > mid.y, allAbove = maxBot < mid.y;
-  var busY;
-  if(allBelow){ busY=minTop-GAP_ABOVE; if(busY<mid.y+MIN_STEM) busY=mid.y+MIN_STEM; }
-  else if(allAbove){ busY=maxBot+GAP_BELOW; if(busY>mid.y-MIN_STEM) busY=mid.y-MIN_STEM; }
-  else{ busY=mid.y+MIN_STEM; }
-
-  var minX=Math.min.apply(Math,xs), maxX=Math.max.apply(Math,xs);
-  var elems=ensureBusElems(key), stem=elems.stem, bus=elems.bus;
-  stem.setAttribute('x1',mid.x); stem.setAttribute('y1',mid.y);
-  stem.setAttribute('x2',mid.x); stem.setAttribute('y2',busY);
-  bus.setAttribute('x1',minX); bus.setAttribute('y1',busY);
-  bus.setAttribute('x2',maxX); bus.setAttribute('y2',busY);
-
-  var busAbove = busY <= minTop, busBelow = busY >= maxBot;
-  var keep={};
-  children.forEach(function(c){
-    var r=c.r, drop=ensureDropElem(key,c.id);
-    var anchorY= busAbove ? r.topy : (busBelow ? r.bottomy : (Math.abs(busY-r.topy)<=Math.abs(busY-r.bottomy)?r.topy:r.bottomy));
-    drop.setAttribute('x1',r.topx); drop.setAttribute('y1',busY);
-    drop.setAttribute('x2',r.topx); drop.setAttribute('y2',anchorY);
-    keep[drop.id]=true;
-  });
-  svg.querySelectorAll('[id^="drop-'+key+'-"]').forEach(function(d){ if(!keep[d.id]) d.remove(); });
-}
-*/
 
 function updateBusGroup(key, group){
   var p1 = group.parents[0], p2 = group.parents[1];
@@ -519,88 +467,6 @@ function parsePartnerTokens(val){
   return s.split(/[;,]/).map(t => t.trim()).filter(Boolean);
 }
 
-/*
-function buildStateFromRows(rows){
-  const nodes={};
-  const filtered = rows.filter(r => typeof r.visible === 'boolean'
-    ? r.visible
-    : String(r.visible||'').trim().toLowerCase() === 'visible');
-  for (const r of filtered){
-    const id = String(r.id);
-    nodes[id] = {
-      id,
-      name: r.name || id,
-      title: r.title || '',
-      title1: r.title1 || '',
-      title2: r.title2 || '',
-      dob: r.dob || '',
-      dod: r.dod || '',
-      biography: r.biography || '',
-      imgSrc: r.img || r.image_url || '',
-      x: toNum(r.x)!=null ? toNum(r.x) : 100,
-      y: toNum(r.y)!=null ? toNum(r.y) : 100,
-      motherId: r.mother_id || null,
-      fatherId: r.father_id || null,
-      parents: Array.isArray(r.parents) ? r.parents.filter(Boolean).map(String) : [],
-      illegitimate: ('illegitimate' in r) ? toBool(r.illegitimate) : false,
-      _partnerTokens: parsePartnerTokens(r.partners)
-    };
-  }
-  const idSet = new Set(Object.keys(nodes));
-  const nameToId = {};
-  for (const id of Object.keys(nodes)){
-    const key = normKey(nodes[id].name);
-    if (key && !(key in nameToId)) nameToId[key] = id;
-  }
-  function resolvePartnerToken(tok){
-    const s = String(tok||'').trim();
-    if (!s) return null;
-    if (idSet.has(s)) return s;
-    return nameToId[normKey(s)] || null;
-  }
-  for (const id of Object.keys(nodes)){
-    const n = nodes[id];
-    const resolved = (n._partnerTokens || []).map(resolvePartnerToken)
-      .filter(pid => pid && pid !== id && idSet.has(pid));
-    n.partners = Array.from(new Set(resolved));
-    delete n._partnerTokens;
-  }
-  for (const id of Object.keys(nodes)){
-    const n = nodes[id];
-    (n.partners||[]).forEach(pid=>{
-      const other = nodes[pid];
-      if (!other) return;
-      if (!Array.isArray(other.partners)) other.partners = [];
-      if (!other.partners.includes(id)) other.partners.push(id);
-    });
-  }
-  const edges=[], triEdges=[];
-  for (const id of Object.keys(nodes)){
-    const child = nodes[id];
-    let parentIds = Array.isArray(child.parents) ? child.parents.filter(Boolean) : [];
-    if (parentIds.length === 0) {
-      if (child.motherId) parentIds.push(child.motherId);
-      if (child.fatherId) parentIds.push(child.fatherId);
-    }
-    parentIds = parentIds.filter(p => nodes[p]);
-    if (parentIds.length >= 2){
-      const p = parentIds.slice(0,2).sort();
-      triEdges.push({ parents:[p[0],p[1]], child:id });
-    } else if (parentIds.length === 1){
-      const p = parentIds[0];
-      const dotted = !!child.illegitimate;
-      const from = p < id ? p : id;
-      const to   = p < id ? id : p;
-      if(!edges.some(e=>e.from===from && e.to===to)){ edges.push({from,to,dotted}); }
-    }
-  }
-  let maxN=0;
-  Object.keys(nodes).forEach(id=>{
-    const m=id.match(/\d+$/); if(m){ const v=parseInt(m[0],10); if(v>maxN) maxN=v; }
-  });
-  return { nodes, edges, triEdges, nextId:maxN+1 };
-}
-*/
 
 function buildStateFromRows(rows){
   const nodes = {};
@@ -821,72 +687,6 @@ async function applyBranchVisibility(selectedId){
     branchSelect.value = lastSelectedBranch;
   }
 }
-
-/*
-async function applyBranchVisibility(selectedId){
-  if (!selectedId) return;
-
-  lastSelectedBranch = selectedId;
-  localStorage.setItem(BRANCH_PREF_KEY, lastSelectedBranch);
-
-  const tablePositions = supabase.from('qvd_tree_positions');
-
-  branchSelect.disabled = true;
-  try {
-    // 1) Clear visibility for everyone except 1 and 1a
-    {
-      const { error } = await tablePositions
-        .update({ visible: null })
-        .neq('id', '1')
-        .neq('id', '1a');
-
-      if (error) {
-        console.error('Supabase error while clearing visibility:', error);
-        const detail =
-          (typeof error === 'string')
-            ? error
-            : (error.message || error.details || JSON.stringify(error));
-        throw new Error('Failed to clear (NULL) visibility: ' + detail);
-      }
-    }
-
-    // 2) Mark the selected branch as visible
-    {
-      const { error } = await tablePositions
-        .update({ visible: 'visible' })
-        .like('id', `${selectedId}%`);
-
-      if (error) {
-        console.error('Supabase error while setting branch visible:', error);
-        const detail =
-          (typeof error === 'string')
-            ? error
-            : (error.message || error.details || JSON.stringify(error));
-        throw new Error('Failed to set branch visible: ' + detail);
-      }
-    }
-
-    // 3) Always keep 1 and 1a visible (best-effort only)
-    {
-      const { error } = await tablePositions
-        .update({ visible: 'visible' })
-        .in('id', ['1','1a']);
-
-      if (error) {
-        console.warn('Could not force 1/1a visible:', error);
-      }
-    }
-
-    await loadFromSupabase();
-  } catch (err) {
-    console.error('applyBranchVisibility failed:', err);
-    alert(err.message || String(err));
-  } finally {
-    branchSelect.disabled = false;
-    branchSelect.value = lastSelectedBranch;
-  }
-}
-*/
 
 
 /* ===== Init ===== */
