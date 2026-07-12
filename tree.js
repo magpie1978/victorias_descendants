@@ -59,6 +59,221 @@ const addPersonError = document.getElementById('addPersonError');
 const cancelAddPerson = document.getElementById('cancelAddPerson');
 
 
+//Check whether the logged-in user is an editor
+async function userIsEditor(user) {
+  if (!user) return false;
+
+  const { data, error } = await supabase
+    .from('qvd_editors')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Could not check editor access:', error);
+    return false;
+  }
+
+  return Boolean(data);
+}
+
+
+
+//APPLY THE CORRECT INTERFACE
+async function applyAuthenticationState(session) {
+  const user = session?.user || null;
+  const authorised = await userIsEditor(user);
+
+  currentEditor = authorised ? user : null;
+  editMode = authorised;
+
+  editorLoginBtn.hidden = authorised;
+  editorToolbar.hidden = !authorised;
+
+  world.classList.toggle('world-editing', authorised);
+
+  if (!authorised) {
+    dragState = null;
+  }
+}
+
+
+//INITIALISE AUTHENTICATION
+async function initialiseEditorAuthentication() {
+  const {
+    data: { session },
+    error
+  } = await supabase.auth.getSession();
+
+  if (error) {
+    console.error('Could not check login session:', error);
+  }
+
+  await applyAuthenticationState(session);
+
+  supabase.auth.onAuthStateChange((event, newSession) => {
+    window.setTimeout(() => {
+      applyAuthenticationState(newSession);
+    }, 0);
+  });
+}
+
+
+//LOGON AND LOGOUT CONTROLS
+editorLoginBtn.addEventListener('click', () => {
+  editorLoginError.textContent = '';
+  editorLoginDialog.showModal();
+});
+
+cancelEditorLogin.addEventListener('click', () => {
+  editorLoginDialog.close();
+});
+
+editorLoginForm.addEventListener('submit', async event => {
+  event.preventDefault();
+
+  editorLoginError.textContent = '';
+
+  const email = document.getElementById('editorEmail').value.trim();
+  const password = document.getElementById('editorPassword').value;
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    editorLoginError.textContent = 'The email address or password was incorrect.';
+    return;
+  }
+
+  editorLoginForm.reset();
+  editorLoginDialog.close();
+});
+
+editorLogoutBtn.addEventListener('click', async () => {
+  const { error } = await supabase.auth.signOut({
+    scope: 'local'
+  });
+
+  if (error) {
+    alert(`Logout failed: ${error.message}`);
+  }
+});
+
+
+
+
+// CARD DRAGGING
+function startCardDrag(event, personId) {
+  if (!editMode) return;
+
+  const node = state.nodes[personId];
+  const card = document.getElementById(personId);
+
+  if (!node || !card) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  card.setPointerCapture(event.pointerId);
+  card.classList.add('dragging');
+
+  dragState = {
+    pointerId: event.pointerId,
+    personId,
+    card,
+    startingPointerX: event.clientX,
+    startingPointerY: event.clientY,
+    startingCardX: node.x,
+    startingCardY: node.y,
+    moved: false
+  };
+}
+
+function moveCardDuringDrag(event) {
+  if (!editMode || !dragState) return;
+  if (event.pointerId !== dragState.pointerId) return;
+
+  const changeX =
+    (event.clientX - dragState.startingPointerX) / WORLD_SCALE;
+
+  const changeY =
+    (event.clientY - dragState.startingPointerY) / WORLD_SCALE;
+
+  if (Math.abs(changeX) > 3 || Math.abs(changeY) > 3) {
+    dragState.moved = true;
+  }
+
+  const node = state.nodes[dragState.personId];
+
+  node.x = Math.round(clamp0(dragState.startingCardX + changeX));
+  node.y = Math.round(clamp0(dragState.startingCardY + changeY));
+
+  dragState.card.style.transform =
+    `translate(${node.x}px, ${node.y}px)`;
+
+  updateWorldSize();
+  updateAllEdges();
+}
+
+async function finishCardDrag(event) {
+  if (!dragState) return;
+  if (event.pointerId !== dragState.pointerId) return;
+
+  const finishedDrag = dragState;
+  dragState = null;
+
+  finishedDrag.card.classList.remove('dragging');
+
+  if (!finishedDrag.moved) return;
+
+  ignoreNextCardClick = true;
+
+  const node = state.nodes[finishedDrag.personId];
+
+  try {
+    await saveNodePosition(node);
+
+    finishedDrag.card.classList.remove('position-saved');
+    void finishedDrag.card.offsetWidth;
+    finishedDrag.card.classList.add('position-saved');
+  } catch (error) {
+    console.error(error);
+    alert(`The new position could not be saved: ${error.message}`);
+
+    node.x = finishedDrag.startingCardX;
+    node.y = finishedDrag.startingCardY;
+
+    renderNode(node);
+    updateWorldSize();
+    updateAllEdges();
+  }
+}
+
+
+async function saveNodePosition(node) {
+  if (!editMode || !currentEditor) {
+    throw new Error('You are not logged in as an editor.');
+  }
+
+  const { error } = await supabase
+    .from('qvd_tree_positions')
+    .update({
+      x: Math.round(node.x),
+      y: Math.round(node.y)
+    })
+    .eq('id', node.id);
+
+  if (error) throw error;
+}
+
+// GLOBAL POINTER LISTENERS
+window.addEventListener('pointermove', moveCardDuringDrag);
+window.addEventListener('pointerup', finishCardDrag);
+window.addEventListener('pointercancel', finishCardDrag);
+
+
 
 /* ===== Drawer helpers ===== */
 
@@ -333,30 +548,155 @@ function updateAllEdges(){
 
 
 /* ===== Rendering ===== */
-function renderNode(n){
-  var el=document.getElementById(n.id);
-  if(!el){
-    el=document.createElement('div'); el.id=n.id; el.className='person';
-    el.setAttribute('role','button'); el.setAttribute('tabindex','0');
+function renderNode(n) {
+  let el = document.getElementById(n.id);
+
+  if (!el) {
+    el = document.createElement('div');
+    el.id = n.id;
+    el.className = 'person';
+    el.setAttribute('role', 'button');
+    el.setAttribute('tabindex', '0');
     el.dataset.pid = n.id;
-    el.innerHTML='<div class="avatar"><img alt="'+(n.name||'photo')+'"></div>\
-      <div class="details">\
-        <div class="name"></div>\
-        <div class="title1"></div>\
-        <div class="title"></div>\
-      </div>';
+
+    el.innerHTML = `
+      <div class="avatar">
+        <img alt="${n.name || 'photo'}">
+      </div>
+
+      <div class="details">
+        <div class="name"></div>
+        <div class="title1"></div>
+        <div class="title"></div>
+      </div>
+    `;
+
     cards.appendChild(el);
-    el.addEventListener('click', function(){ openDrawerFor(n.id); });
-    el.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDrawerFor(n.id); }});
+
+    el.addEventListener('pointerdown', event => {
+      if (editMode) {
+        startCardDrag(event, n.id);
+      }
+    });
+
+    el.addEventListener('click', event => {
+      if (ignoreNextCardClick) {
+        ignoreNextCardClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      openDrawerFor(n.id);
+    });
+
+    el.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openDrawerFor(n.id);
+      }
+    });
   }
-  el.querySelector('.name').textContent=n.name||'';
-  el.querySelector('.title1').textContent=n.title1||'';
-  el.querySelector('.title').textContent=n.title||'';
-  var img=el.querySelector('img');
+
+  el.querySelector('.name').textContent = n.name || '';
+  el.querySelector('.title1').textContent = n.title1 || '';
+  el.querySelector('.title').textContent = n.title || '';
+
+  const img = el.querySelector('img');
+
   img.src = n.imgSrc || FALLBACK_IMAGE;
-  img.onerror = function(){ img.src = FALLBACK_IMAGE; };
-  el.style.transform='translate('+n.x+'px,'+n.y+'px)';
+  img.onerror = function () {
+    img.src = FALLBACK_IMAGE;
+  };
+
+  el.style.transform = `translate(${n.x}px, ${n.y}px)`;
 }
+
+
+/* ===== ADD NEW PERSON DIALOGUE ===== */
+addPersonBtn.addEventListener('click', () => {
+  addPersonError.textContent = '';
+
+  document.getElementById('newPersonX').value =
+    Math.round((scrollEl.scrollLeft + 200) / WORLD_SCALE);
+
+  document.getElementById('newPersonY').value =
+    Math.round((scrollEl.scrollTop + 200) / WORLD_SCALE);
+
+  addPersonDialog.showModal();
+});
+
+cancelAddPerson.addEventListener('click', () => {
+  addPersonDialog.close();
+});
+
+
+
+/* ===== ADD NEW PERSON FORM ===== */
+addPersonForm.addEventListener('submit', async event => {
+  event.preventDefault();
+
+  if (!editMode || !currentEditor) {
+    addPersonError.textContent = 'You are not logged in as an editor.';
+    return;
+  }
+
+  addPersonError.textContent = '';
+
+  const person = {
+    id: document.getElementById('newPersonId').value.trim(),
+    name: document.getElementById('newPersonName').value.trim(),
+    title1: document.getElementById('newPersonTitle1').value.trim(),
+    title2: document.getElementById('newPersonTitle2').value.trim(),
+    dob: document.getElementById('newPersonDob').value.trim(),
+    biography: document.getElementById('newPersonBiography').value.trim(),
+    img: document.getElementById('newPersonImage').value.trim(),
+    father_id:
+      document.getElementById('newPersonFather').value.trim() || null,
+    mother_id:
+      document.getElementById('newPersonMother').value.trim() || null
+  };
+
+  const position = {
+    id: person.id,
+    x: Number(document.getElementById('newPersonX').value),
+    y: Number(document.getElementById('newPersonY').value),
+    visible: 'visible'
+  };
+
+  try {
+    /*
+     * Replace qvd_people with the actual table supplying the
+     * personal-information columns to the qvd_website view.
+     */
+    const { error: personError } = await supabase
+      .from('qvd_people')
+      .insert(person);
+
+    if (personError) throw personError;
+
+    const { error: positionError } = await supabase
+      .from('qvd_tree_positions')
+      .insert(position);
+
+    if (positionError) throw positionError;
+
+    addPersonForm.reset();
+    addPersonDialog.close();
+
+    await loadFromSupabase();
+    focusPerson(person.id);
+  } catch (error) {
+    console.error(error);
+    addPersonError.textContent =
+      error.message || 'The person could not be added.';
+  }
+});
+
+
+
+
+
 function renderAll(){
   cards.innerHTML='';
   Object.keys(state.nodes).forEach(function(id){ renderNode(state.nodes[id]); });
@@ -673,6 +1013,13 @@ function populateBranchSelect(allRows, selectedValue = ''){
 async function applyBranchVisibility(selectedId){
   if (!selectedId) return;
 
+  if (!editMode || !currentEditor) {
+    alert('You must be logged in as an editor to change branch visibility.');
+    branchSelect.value = lastSelectedBranch;
+    return;
+  }
+
+
   lastSelectedBranch = selectedId;
   localStorage.setItem(BRANCH_PREF_KEY, lastSelectedBranch);
 
@@ -724,6 +1071,9 @@ function init(){
   updateWorldSize();
   renderAll();
   loadFromSupabase().catch(err=>{ console.error(err); alert('Load failed: ' + err.message); });
+  initialiseEditorAuthentication().catch(error => {
+    console.error('Editor authentication failed:', error);
+  });
 }
 
 window.addEventListener('resize', function(){ updateWorldSize(); updateAllEdges(); });
