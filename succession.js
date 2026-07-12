@@ -12,8 +12,11 @@
   const nextPageBtn = document.getElementById('nextPageBtn');
 
   const FALLBACK_IMAGE = "https://i.pinimg.com/736x/3f/3c/f8/3f3cf824ceb39fa5dbd00aa986e25f54.jpg";
+  
+  // A helper function that ensures empty (null or blank) values are displayed as an empty string rather than "null" or "undefined". This keeps the table tidy.
   const safe = v => (v == null || v === '') ? '' : String(v);
 
+  //Retrieve and display no more than 100 people per page.
   const PAGE_SIZE = 100;
   let includeExcluded = false;
   let currentPage = 0;
@@ -23,6 +26,7 @@
   let openDetailsRow = null;
   let openPersonRow = null;
 
+  //Builds the table header (#, Name, Relationship, DOB) dynamically and inserts it into the page.
   function renderHeader(){
     theadRow.innerHTML = `
       <th class="pos">#</th>
@@ -33,6 +37,7 @@
     `;
   }
 
+  //Converts abbreviated exclusion codes (such as rc or illeg) into readable English explanations.
   function formatExclusion(flag){
     if(!flag) return '';
     const f = String(flag).toLowerCase();
@@ -42,6 +47,8 @@
     return flag;
   }
 
+  //Takes one person's record from the database and converts it into a clickable HTML table row, including their name, titles, relationship, date of birth and (optionally) exclusion reason. 
+  //It also stores the person's image and biography so they can be displayed later.
   function makeRow(row){
     const { name, title1, title2, dob, img, exclusion_flag, relationship_to_charles, biography } = row;
     const imgSrc = img || FALLBACK_IMAGE;
@@ -68,12 +75,15 @@
     return tr;
   }
 
+  //Efficiently adds multiple people to the table by creating all the rows first and then inserting them into the page in one operation. This improves performance.
   function appendRows(rows){
     const frag = document.createDocumentFragment();
     rows.forEach(r => frag.appendChild(makeRow(r)));
     tbody.appendChild(frag);
   }
 
+  //The main database function. Retrieves one page (100 records) from Supabase, applies the current filter (hide/show excluded people), 
+  //sorts the results, clears the previous page, inserts the new rows, and updates the Previous/Next buttons.
   async function fetchPage(pageIndex = 0){
     if (loading) return;
     loading = true;
@@ -117,6 +127,7 @@
     }
   }
 
+  //Closes the currently open biography panel beneath a person. Waits for the closing animation to finish before removing the panel from the page.
   function closeDetails(){
     if (!openDetailsRow) return;
 
@@ -140,6 +151,8 @@
     rowToRemove.addEventListener('transitionend', onEnd);
   }
 
+  //Opens a biography panel underneath the selected person. Displays their photograph, name and biography. 
+  //If another biography is already open, it closes that first. Clicking the same person twice toggles the panel closed.
   function openDetailsForRow(personRow){
     const name = personRow.dataset.name || 'Unknown';
     const imgSrc = personRow.dataset.img || FALLBACK_IMAGE;
