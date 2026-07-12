@@ -37,6 +37,29 @@ const backdrop = document.getElementById('backdrop');
 const drawerBody = () => document.querySelector('.drawer-body');
 
 
+/* ===== Editor authentication and edit mode ===== */
+let currentEditor = null;
+let editMode = false;
+let dragState = null;
+let ignoreNextCardClick = false;
+
+const editorLoginBtn = document.getElementById('editorLoginBtn');
+const editorLogoutBtn = document.getElementById('editorLogoutBtn');
+const editorToolbar = document.getElementById('editorToolbar');
+
+const editorLoginDialog = document.getElementById('editorLoginDialog');
+const editorLoginForm = document.getElementById('editorLoginForm');
+const editorLoginError = document.getElementById('editorLoginError');
+const cancelEditorLogin = document.getElementById('cancelEditorLogin');
+
+const addPersonBtn = document.getElementById('addPersonBtn');
+const addPersonDialog = document.getElementById('addPersonDialog');
+const addPersonForm = document.getElementById('addPersonForm');
+const addPersonError = document.getElementById('addPersonError');
+const cancelAddPerson = document.getElementById('cancelAddPerson');
+
+
+
 /* ===== Drawer helpers ===== */
 
 /* looks for the person in state.nodes[id] and builds HTML for their photo, name, titles, birth, death, biography
