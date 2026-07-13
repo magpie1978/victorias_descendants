@@ -454,3 +454,35 @@ dialog textarea {
   gap: 10px;
   margin-top: 12px;
 }
+
+
+
+
+
+
+
+.drawer-editor-actions {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(234, 223, 175, 0.35);
+}
+
+.make-space-left-btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.make-space-left-btn:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.make-space-left-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
