@@ -67,7 +67,10 @@ const cancelAddPerson = document.getElementById('cancelAddPerson');
 
 //Check whether the logged-in user is an editor
 async function userIsEditor(user) {
-  if (!user) return false;
+  if (!user) {
+    console.warn('No authenticated user was found.');
+    return false;
+  }
 
   const { data, error } = await supabase
     .from('qvd_editors')
@@ -76,11 +79,27 @@ async function userIsEditor(user) {
     .maybeSingle();
 
   if (error) {
-    console.error('Could not check editor access:', error);
+    console.error('Editor access check failed:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    });
+
     return false;
   }
 
-  return Boolean(data);
+  if (!data) {
+    console.warn(
+      'User is authenticated but is not listed in qvd_editors:',
+      user.id,
+      user.email
+    );
+
+    return false;
+  }
+
+  return true;
 }
 
 
