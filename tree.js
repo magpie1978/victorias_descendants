@@ -28,8 +28,100 @@ var branchSelect = document.getElementById('branchSelect');
 
 /* Remember selection across reloads and default to 1:1 */
 const BRANCH_PREF_KEY = 'qv_branch_selected';
-let lastSelectedBranch = localStorage.getItem(BRANCH_PREF_KEY) || '1:1';
-let didApplyDefault = false;
+
+let lastSelectedBranch =
+  localStorage.getItem(BRANCH_PREF_KEY) || '1:1';
+
+let allTreeRows = [];
+
+
+/*
+ * Retrieve all people from the materialized view.
+ */
+async function fetchRowsFromView() {
+  const { data, error } = await supabase
+    .from('YOUR_RENAMED_VIEW')
+    .select('*')
+    .order('gen', { ascending: true })
+    .order('id', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+
+/*
+ * Load all rows once and display the selected branch.
+ */
+async function loadFromSupabase() {
+  allTreeRows = await fetchRowsFromView();
+
+  populateBranchSelect(
+    allTreeRows,
+    lastSelectedBranch
+  );
+
+  const selectedBranch =
+    branchSelect.value ||
+    lastSelectedBranch ||
+    '1:1';
+
+  applyBranchSelection(selectedBranch);
+}
+
+
+/*
+ * Display one branch locally.
+ *
+ * This does not make any changes to Supabase.
+ */
+function applyBranchSelection(selectedId) {
+  if (!selectedId) return;
+
+  lastSelectedBranch = selectedId;
+
+  localStorage.setItem(
+    BRANCH_PREF_KEY,
+    selectedId
+  );
+
+  const branchRows = allTreeRows.filter(row => {
+    const id = String(row.id || '').trim();
+
+    return (
+      id === '1' ||
+      id === '1a' ||
+      id === selectedId ||
+      id.startsWith(`${selectedId}:`)
+    );
+  });
+
+  const newState = buildStateFromRows(branchRows);
+
+  ensureWorldFitsForState(newState);
+
+  state = newState;
+
+  renderAll();
+
+  branchSelect.value = selectedId;
+}
+
+
+/*
+ * Branch selection is available to every visitor.
+ */
+branchSelect.addEventListener('change', event => {
+  const selectedId = event.target.value;
+
+  if (selectedId) {
+    applyBranchSelection(selectedId);
+  }
+});
+
 
 /* drawer (pop-out) references */
 const drawer   = document.getElementById('drawer');
@@ -831,18 +923,18 @@ function parsePartnerTokens(val){
 }
 
 
-function buildStateFromRows(rows){
+function buildStateFromRows(rows) {
   const nodes = {};
 
-  // 1) Build nodes
-  const filtered = rows.filter(r =>
-    typeof r.visible === 'boolean'
-      ? r.visible
-      : String(r.visible || '').trim().toLowerCase() === 'visible'
-  );
+  /*
+   * Rows have already been filtered to the selected branch.
+   * Do not use the database visible field here.
+   */
+  const filtered = rows;
 
-  for (const r of filtered){
+  for (const r of filtered) {
     const id = String(r.id);
+
     nodes[id] = {
       id,
       name: r.name || id,
@@ -857,13 +949,21 @@ function buildStateFromRows(rows){
       y: toNum(r.y) != null ? toNum(r.y) : 100,
       motherId: r.mother_id || null,
       fatherId: r.father_id || null,
-      // keep whatever is in the parents array for now
-      parents: Array.isArray(r.parents) ? r.parents.filter(Boolean).map(String) : [],
-      illegitimate: ('illegitimate' in r) ? toBool(r.illegitimate) : false,
+
+      parents: Array.isArray(r.parents)
+        ? r.parents.filter(Boolean).map(String)
+        : [],
+
+      illegitimate:
+        ('illegitimate' in r)
+          ? toBool(r.illegitimate)
+          : false,
+
       _partnerTokens: parsePartnerTokens(r.partners)
     };
   }
 
+  
   // 2) Build lookup helpers (for partner resolution)
   const idSet   = new Set(Object.keys(nodes));
   const nameToId = {};
@@ -952,38 +1052,47 @@ function buildStateFromRows(rows){
 
 
 /* Read from VIEW */
-async function fetchRowsFromView({ onlyVisible = true } = {}){
-  let query = supabase.from('qvd_website').select('*');
-  if (onlyVisible) query = query.eq('visible', 'visible');
-  query = query.order('gen', { ascending: true }).order('id', { ascending: true });
-  const { data, error } = await query;
-  if (error) throw error;
+async function fetchRowsFromView() {
+  const { data, error } = await supabase
+    .from('YOUR_RENAMED_VIEW')
+    .select('*')
+    .order('gen', { ascending: true })
+    .order('id', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
   return data ?? [];
 }
 
 
 /* Load + build + render. Populate dropdown from ALL rows (view) */
-async function loadFromSupabase(){
-  const [rowsVisible, rowsAll] = await Promise.all([
-    fetchRowsFromView({ onlyVisible:true }),
-    fetchRowsFromView({ onlyVisible:false })
-  ]);
+async function loadFromSupabase() {
+  /*
+   * Retrieve all rows once.
+   *
+   * Branch selection will now be handled locally in JavaScript,
+   * rather than by changing visibility values in Supabase.
+   */
+  allTreeRows = await fetchRowsFromView({
+    onlyVisible: false
+  });
 
-  let newState = buildStateFromRows(rowsVisible);
-  ensureWorldFitsForState(newState);
-  state = newState;
-  renderAll();
+  populateBranchSelect(
+    allTreeRows,
+    lastSelectedBranch
+  );
 
-  populateBranchSelect(rowsAll, lastSelectedBranch);
+  const selectedBranch =
+    branchSelect.value ||
+    lastSelectedBranch ||
+    '1:1';
 
-  if (!didApplyDefault) {
-    didApplyDefault = true;
-    const choice = branchSelect.value || '1:1';
-    if (choice) {
-      await applyBranchVisibility(choice);
-    }
-  }
+  applyBranchSelection(selectedBranch);
 }
+
+
 
 
 /* Populate branch dropdown with exactly 1:1 .. 1:9 */
@@ -1010,14 +1119,53 @@ function populateBranchSelect(allRows, selectedValue = ''){
 
 
 /* ===== Apply branch visibility (WRITE to TABLE qvd_tree_positions) ===== */
-async function applyBranchVisibility(selectedId){
+function applyBranchSelection(selectedId) {
   if (!selectedId) return;
 
-  if (!editMode || !currentEditor) {
-    alert('You must be logged in as an editor to change branch visibility.');
-    branchSelect.value = lastSelectedBranch;
-    return;
-  }
+  lastSelectedBranch = selectedId;
+
+  localStorage.setItem(
+    BRANCH_PREF_KEY,
+    selectedId
+  );
+
+  /*
+   * Always display Queen Victoria and Prince Albert.
+   *
+   * Then display everyone whose ID begins with the
+   * selected branch ID.
+   *
+   * Examples:
+   *
+   * 1:1
+   * 1:1:1
+   * 1:1:2
+   * 1:1:2:1
+   */
+  const branchRows = allTreeRows.filter(row => {
+    const id = String(row.id || '').trim();
+
+    return (
+      id === '1' ||
+      id === '1a' ||
+      id === selectedId ||
+      id.startsWith(`${selectedId}:`)
+    );
+  });
+
+  const newState = buildStateFromRows(branchRows);
+
+  ensureWorldFitsForState(newState);
+
+  state = newState;
+
+  renderAll();
+
+  branchSelect.value = selectedId;
+}
+
+
+
 
 
   lastSelectedBranch = selectedId;
@@ -1060,28 +1208,32 @@ async function applyBranchVisibility(selectedId){
 
 
 /* ===== Init ===== */
-function init(){
+async function init() {
   world.classList.add('grid');
   world.style.setProperty('--gs', '40px');
 
-  /* Apply the global scale so cards + connectors are zoomed as one */
   world.style.transform = `scale(${WORLD_SCALE})`;
   world.style.transformOrigin = 'top left';
 
   updateWorldSize();
   renderAll();
-  loadFromSupabase().catch(err=>{ console.error(err); alert('Load failed: ' + err.message); });
-  initialiseEditorAuthentication().catch(error => {
-    console.error('Editor authentication failed:', error);
-  });
+
+  try {
+    await initialiseEditorAuthentication();
+    await loadFromSupabase();
+  } catch (error) {
+    console.error(error);
+    alert(`Load failed: ${error.message}`);
+  }
 }
 
 window.addEventListener('resize', function(){ updateWorldSize(); updateAllEdges(); });
 document.getElementById('scroll').addEventListener('scroll', function(){ updateAllEdges(); });
-branchSelect.addEventListener('change', (e)=>{
-  const sel = e.target.value;
-  if (sel) {
-    applyBranchVisibility(sel);
+branchSelect.addEventListener('change', event => {
+  const selectedId = event.target.value;
+
+  if (selectedId) {
+    applyBranchSelection(selectedId);
   }
 });
 
