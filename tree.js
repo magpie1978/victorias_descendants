@@ -334,13 +334,62 @@ function openDrawerFor(id) {
     </div>
 
     <div class="drawer-bio">${safe(n.biography)}</div>
-  `;
-  drawerBody().innerHTML = html;
+
+    ${editMode ? `
+      <div class="drawer-editor-actions">
+        <button
+          type="button"
+          class="make-space-left-btn"
+          data-person-id="${safe(n.id)}"
+        >
+          Make space to left
+        </button>
+      </div>
+    ` : ''}
+      `;
+      drawerBody().innerHTML = html;
+
+  const makeSpaceButton =
+  drawerBody().querySelector('.make-space-left-btn');
+
+if (makeSpaceButton) {
+  makeSpaceButton.addEventListener('click', async () => {
+    const personId = makeSpaceButton.dataset.personId;
+
+    const confirmed = window.confirm(
+      'Move this person and every card to their right to create space for one additional card?'
+    );
+
+    if (!confirmed) return;
+
+    makeSpaceButton.disabled = true;
+    makeSpaceButton.textContent = 'Moving cards…';
+
+    try {
+      await makeSpaceToLeftOfPerson(personId);
+
+      makeSpaceButton.textContent = 'Space created';
+
+      closeDrawer();
+    } catch (error) {
+      console.error(error);
+
+      alert(
+        `The cards could not be moved: ${error.message}`
+      );
+
+      makeSpaceButton.disabled = false;
+      makeSpaceButton.textContent = 'Make space to left';
+    }
+  });
+}
 
   drawer.setAttribute('open', '');
   drawer.setAttribute('aria-hidden', 'false');
   backdrop.setAttribute('data-show', 'true');
   backdrop.setAttribute('aria-hidden', 'false');
+
+  
 }
 
 /* hides the drawer and the backdrop */
