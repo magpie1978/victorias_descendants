@@ -35,92 +35,6 @@ let lastSelectedBranch =
 let allTreeRows = [];
 
 
-/*
- * Retrieve all people from the materialized view.
- */
-async function fetchRowsFromView() {
-  const { data, error } = await supabase
-    .from('YOUR_RENAMED_VIEW')
-    .select('*')
-    .order('gen', { ascending: true })
-    .order('id', { ascending: true });
-
-  if (error) {
-    throw error;
-  }
-
-  return data ?? [];
-}
-
-
-/*
- * Load all rows once and display the selected branch.
- */
-async function loadFromSupabase() {
-  allTreeRows = await fetchRowsFromView();
-
-  populateBranchSelect(
-    allTreeRows,
-    lastSelectedBranch
-  );
-
-  const selectedBranch =
-    branchSelect.value ||
-    lastSelectedBranch ||
-    '1:1';
-
-  applyBranchSelection(selectedBranch);
-}
-
-
-/*
- * Display one branch locally.
- *
- * This does not make any changes to Supabase.
- */
-function applyBranchSelection(selectedId) {
-  if (!selectedId) return;
-
-  lastSelectedBranch = selectedId;
-
-  localStorage.setItem(
-    BRANCH_PREF_KEY,
-    selectedId
-  );
-
-  const branchRows = allTreeRows.filter(row => {
-    const id = String(row.id || '').trim();
-
-    return (
-      id === '1' ||
-      id === '1a' ||
-      id === selectedId ||
-      id.startsWith(`${selectedId}:`)
-    );
-  });
-
-  const newState = buildStateFromRows(branchRows);
-
-  ensureWorldFitsForState(newState);
-
-  state = newState;
-
-  renderAll();
-
-  branchSelect.value = selectedId;
-}
-
-
-/*
- * Branch selection is available to every visitor.
- */
-branchSelect.addEventListener('change', event => {
-  const selectedId = event.target.value;
-
-  if (selectedId) {
-    applyBranchSelection(selectedId);
-  }
-});
 
 
 /* drawer (pop-out) references */
@@ -1050,11 +964,17 @@ function buildStateFromRows(rows) {
 }
 
 
+/* ===== Supabase tree loading ===== */
 
-/* Read from VIEW */
+/*
+ * Retrieve all people from the materialized view.
+ *
+ * Replace YOUR_ACTUAL_VIEW_NAME with the real name
+ * of the materialized view in Supabase.
+ */
 async function fetchRowsFromView() {
   const { data, error } = await supabase
-    .from('YOUR_RENAMED_VIEW')
+    .from('qvd_website')
     .select('*')
     .order('gen', { ascending: true })
     .order('id', { ascending: true });
@@ -1067,17 +987,11 @@ async function fetchRowsFromView() {
 }
 
 
-/* Load + build + render. Populate dropdown from ALL rows (view) */
+/*
+ * Load all rows and populate the branch dropdown.
+ */
 async function loadFromSupabase() {
-  /*
-   * Retrieve all rows once.
-   *
-   * Branch selection will now be handled locally in JavaScript,
-   * rather than by changing visibility values in Supabase.
-   */
-  allTreeRows = await fetchRowsFromView({
-    onlyVisible: false
-  });
+  allTreeRows = await fetchRowsFromView();
 
   populateBranchSelect(
     allTreeRows,
@@ -1093,32 +1007,56 @@ async function loadFromSupabase() {
 }
 
 
-
-
-/* Populate branch dropdown with exactly 1:1 .. 1:9 */
-function populateBranchSelect(allRows, selectedValue = ''){
+/*
+ * Populate the branch dropdown with Queen Victoria's
+ * nine children: 1:1 through 1:9.
+ */
+function populateBranchSelect(allRows, selectedValue = '') {
   const CHILD_REGEX = /^1:[1-9]$/;
-  const kids = (allRows || [])
-    .map(r => ({ id: String(r.id).trim(), name: r.name || String(r.id).trim() }))
-    .filter(r => CHILD_REGEX.test(r.id))
-    .sort((a,b) => parseInt(a.id.split(':')[1],10) - parseInt(b.id.split(':')[1],10));
 
-  branchSelect.innerHTML = '<option value="">— Select a branch —</option>';
-  for (const k of kids){
-    const opt = document.createElement('option');
-    opt.value = k.id;
-    opt.textContent = `${k.id} — ${k.name}`;
-    branchSelect.appendChild(opt);
+  const kids = (allRows || [])
+    .map(row => {
+      const id = String(row.id || '').trim();
+
+      return {
+        id,
+        name: row.name || id
+      };
+    })
+    .filter(person => CHILD_REGEX.test(person.id))
+    .sort((a, b) => {
+      const aNumber = Number(a.id.split(':')[1]);
+      const bNumber = Number(b.id.split(':')[1]);
+
+      return aNumber - bNumber;
+    });
+
+  branchSelect.innerHTML =
+    '<option value="">— Select a branch —</option>';
+
+  for (const child of kids) {
+    const option = document.createElement('option');
+
+    option.value = child.id;
+    option.textContent = `${child.id} — ${child.name}`;
+
+    branchSelect.appendChild(option);
   }
 
   const desired = selectedValue || '1:1';
-  if (desired && kids.some(k => k.id === desired)) {
+
+  if (kids.some(child => child.id === desired)) {
     branchSelect.value = desired;
   }
 }
 
 
-/* ===== Apply branch visibility (WRITE to TABLE qvd_tree_positions) ===== */
+/*
+ * Display the selected branch locally.
+ *
+ * This does not update Supabase, so every visitor can
+ * select a branch without being logged in.
+ */
 function applyBranchSelection(selectedId) {
   if (!selectedId) return;
 
@@ -1129,19 +1067,6 @@ function applyBranchSelection(selectedId) {
     selectedId
   );
 
-  /*
-   * Always display Queen Victoria and Prince Albert.
-   *
-   * Then display everyone whose ID begins with the
-   * selected branch ID.
-   *
-   * Examples:
-   *
-   * 1:1
-   * 1:1:1
-   * 1:1:2
-   * 1:1:2:1
-   */
   const branchRows = allTreeRows.filter(row => {
     const id = String(row.id || '').trim();
 
@@ -1162,48 +1087,6 @@ function applyBranchSelection(selectedId) {
   renderAll();
 
   branchSelect.value = selectedId;
-}
-
-
-
-
-
-  lastSelectedBranch = selectedId;
-  localStorage.setItem(BRANCH_PREF_KEY, lastSelectedBranch);
-
-  const tablePositions = supabase.from('qvd_tree_positions');
-
-  branchSelect.disabled = true;
-  try {
-    {
-      const { error } = await tablePositions
-        .update({ visible: null })
-        .neq('id', '1')
-        .neq('id', '1a');
-      if (error) throw new Error('Failed to clear (NULL) visibility: ' + error.message);
-    }
-
-    {
-      const { error } = await tablePositions
-        .update({ visible: 'visible' })
-        .like('id', `${selectedId}%`);
-      if (error) throw new Error('Failed to set branch visible: ' + error.message);
-    }
-
-    {
-      const { error } = await tablePositions
-        .update({ visible: 'visible' })
-        .in('id', ['1','1a']);
-      if (error) console.warn('Could not force 1/1a visible:', error);
-    }
-
-    await loadFromSupabase();
-  } catch (err) {
-    alert(err.message || String(err));
-  } finally {
-    branchSelect.disabled = false;
-    branchSelect.value = lastSelectedBranch;
-  }
 }
 
 
