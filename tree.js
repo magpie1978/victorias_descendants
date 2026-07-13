@@ -1103,29 +1103,145 @@ function populateBranchSelect(allRows, selectedValue = '') {
 /*
  * Display the selected branch locally.
  *
- * This does not update Supabase, so every visitor can
- * select a branch without being logged in.
+ * In addition to descendants within the selected ID prefix,
+ * include their parents and partners. These supporting people
+ * are needed so two-parent family-tree connectors can be drawn.
+ *
+ * This function does not update Supabase.
  */
 function applyBranchSelection(selectedId) {
   if (!selectedId) return;
 
   lastSelectedBranch = selectedId;
+  localStorage.setItem(BRANCH_PREF_KEY, selectedId);
 
-  localStorage.setItem(
-    BRANCH_PREF_KEY,
-    selectedId
-  );
+  /*
+   * Create lookups for resolving references either by ID
+   * or by the person's name.
+   */
+  const rowById = new Map();
+  const rowByName = new Map();
 
-  const branchRows = allTreeRows.filter(row => {
+  allTreeRows.forEach(row => {
     const id = String(row.id || '').trim();
 
-    return (
+    if (!id) return;
+
+    rowById.set(id, row);
+
+    const nameKey = normKey(row.name);
+
+    if (nameKey && !rowByName.has(nameKey)) {
+      rowByName.set(nameKey, row);
+    }
+  });
+
+  /*
+   * Start with Queen Victoria, Prince Albert and everyone
+   * whose ID belongs to the selected branch.
+   */
+  const includedIds = new Set();
+
+  allTreeRows.forEach(row => {
+    const id = String(row.id || '').trim();
+
+    if (
       id === '1' ||
       id === '1a' ||
       id === selectedId ||
       id.startsWith(`${selectedId}:`)
-    );
+    ) {
+      includedIds.add(id);
+    }
   });
+
+  /*
+   * Resolve a reference that might contain either an ID
+   * or a person's name.
+   */
+  function resolveReference(reference) {
+    const value = String(reference || '').trim();
+
+    if (!value) return null;
+
+    if (rowById.has(value)) {
+      return rowById.get(value);
+    }
+
+    return rowByName.get(normKey(value)) || null;
+  }
+
+  /*
+   * Include the parents and partners of every selected person.
+   *
+   * Repeat until nothing else needs to be added. This ensures,
+   * for example, that a selected child brings in both parents,
+   * and that a selected parent brings in their spouse.
+   */
+  let rowsAdded = true;
+
+  while (rowsAdded) {
+    rowsAdded = false;
+
+    const idsToCheck = Array.from(includedIds);
+
+    idsToCheck.forEach(id => {
+      const row = rowById.get(id);
+
+      if (!row) return;
+
+      const relationshipReferences = [];
+
+      /*
+       * Parent fields.
+       */
+      if (row.mother_id) {
+        relationshipReferences.push(row.mother_id);
+      }
+
+      if (row.father_id) {
+        relationshipReferences.push(row.father_id);
+      }
+
+      if (Array.isArray(row.parents)) {
+        relationshipReferences.push(...row.parents);
+      }
+
+      /*
+       * Partner field. This handles arrays and text separated
+       * by commas or semicolons through parsePartnerTokens().
+       */
+      relationshipReferences.push(
+        ...parsePartnerTokens(row.partners)
+      );
+
+      relationshipReferences.forEach(reference => {
+        const relatedRow = resolveReference(reference);
+
+        if (!relatedRow) return;
+
+        const relatedId = String(relatedRow.id || '').trim();
+
+        if (relatedId && !includedIds.has(relatedId)) {
+          includedIds.add(relatedId);
+          rowsAdded = true;
+        }
+      });
+    });
+  }
+
+  /*
+   * Build the final set of rows in the original database order.
+   */
+  const branchRows = allTreeRows.filter(row => {
+    const id = String(row.id || '').trim();
+
+    return includedIds.has(id);
+  });
+
+  console.log(
+    `Branch ${selectedId}: displaying ${branchRows.length} people`
+  );
 
   const newState = buildStateFromRows(branchRows);
 
