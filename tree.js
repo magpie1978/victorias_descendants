@@ -991,20 +991,50 @@ function buildStateFromRows(rows) {
  * Replace YOUR_ACTUAL_VIEW_NAME with the real name
  * of the materialized view in Supabase.
  */
+/*
+ * Retrieve every row from the materialized view.
+ * Supabase normally returns no more than 1,000 rows per request,
+ * so the records are loaded in batches.
+ */
 async function fetchRowsFromView() {
-  const { data, error } = await supabase
-    .from('qvd_website')
-    .select('*')
-    .order('gen', { ascending: true })
-    .order('id', { ascending: true });
+  const PAGE_SIZE = 1000;
+  const allRows = [];
 
-  if (error) {
-    throw error;
+  let from = 0;
+
+  while (true) {
+    const to = from + PAGE_SIZE - 1;
+
+    const { data, error } = await supabase
+      .from('qvd_website')
+      .select('*')
+      .order('gen', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      throw error;
+    }
+
+    const rows = data ?? [];
+
+    allRows.push(...rows);
+
+    /*
+     * Fewer than 1,000 rows means that this was
+     * the final batch.
+     */
+    if (rows.length < PAGE_SIZE) {
+      break;
+    }
+
+    from += PAGE_SIZE;
   }
 
-  return data ?? [];
-}
+  console.log(`Loaded ${allRows.length} tree records.`);
 
+  return allRows;
+}
 
 /*
  * Load all rows and populate the branch dropdown.
