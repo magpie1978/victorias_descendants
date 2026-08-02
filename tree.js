@@ -996,7 +996,7 @@ async function init() {
   renderAll();
 
   try {
-    await initialiseEditorAuthentication();
+    //await initialiseEditorAuthentication();
     await loadFromSupabase();
   } catch (error) {
     console.error(error);
