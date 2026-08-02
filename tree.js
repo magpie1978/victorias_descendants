@@ -190,91 +190,91 @@ async function initialiseEditorAuthentication() {
 
 
 // CARD DRAGGING
-function startCardDrag(event, personId) {
-  if (!editMode) return;
+//function startCardDrag(event, personId) {
+//  if (!editMode) return;
 
-  const node = state.nodes[personId];
-  const card = document.getElementById(personId);
+//  const node = state.nodes[personId];
+//  const card = document.getElementById(personId);
 
-  if (!node || !card) return;
+//  if (!node || !card) return;
 
-  event.preventDefault();
-  event.stopPropagation();
+//  event.preventDefault();
+//  event.stopPropagation();
 
-  card.setPointerCapture(event.pointerId);
-  card.classList.add('dragging');
+//  card.setPointerCapture(event.pointerId);
+//  card.classList.add('dragging');
 
-  dragState = {
-    pointerId: event.pointerId,
-    personId,
-    card,
-    startingPointerX: event.clientX,
-    startingPointerY: event.clientY,
-    startingCardX: node.x,
-    startingCardY: node.y,
-    moved: false
-  };
-}
+//  dragState = {
+//    pointerId: event.pointerId,
+//    personId,
+//    card,
+//    startingPointerX: event.clientX,
+//    startingPointerY: event.clientY,
+//    startingCardX: node.x,
+//    startingCardY: node.y,
+//    moved: false
+//  };
+//}
 
-function moveCardDuringDrag(event) {
-  if (!editMode || !dragState) return;
-  if (event.pointerId !== dragState.pointerId) return;
+//function moveCardDuringDrag(event) {
+//  if (!editMode || !dragState) return;
+//  if (event.pointerId !== dragState.pointerId) return;
 
-  const changeX =
-    (event.clientX - dragState.startingPointerX) / WORLD_SCALE;
+//  const changeX =
+//    (event.clientX - dragState.startingPointerX) / WORLD_SCALE;
 
-  const changeY =
-    (event.clientY - dragState.startingPointerY) / WORLD_SCALE;
+//  const changeY =
+//    (event.clientY - dragState.startingPointerY) / WORLD_SCALE;
 
-  if (Math.abs(changeX) > 3 || Math.abs(changeY) > 3) {
-    dragState.moved = true;
-  }
+//  if (Math.abs(changeX) > 3 || Math.abs(changeY) > 3) {
+//    dragState.moved = true;
+ // }
 
-  const node = state.nodes[dragState.personId];
+//  const node = state.nodes[dragState.personId];
 
-  node.x = Math.round(clamp0(dragState.startingCardX + changeX));
-  node.y = Math.round(clamp0(dragState.startingCardY + changeY));
+//  node.x = Math.round(clamp0(dragState.startingCardX + changeX));
+//  node.y = Math.round(clamp0(dragState.startingCardY + changeY));
 
-  dragState.card.style.transform =
-    `translate(${node.x}px, ${node.y}px)`;
+//  dragState.card.style.transform =
+//    `translate(${node.x}px, ${node.y}px)`;
 
-  updateWorldSize();
-  updateAllEdges();
-}
+//  updateWorldSize();
+//  updateAllEdges();
+//}
 
-async function finishCardDrag(event) {
-  if (!dragState) return;
-  if (event.pointerId !== dragState.pointerId) return;
+//async function finishCardDrag(event) {
+ // if (!dragState) return;
+ // if (event.pointerId !== dragState.pointerId) return;
 
-  const finishedDrag = dragState;
-  dragState = null;
+//  const finishedDrag = dragState;
+//  dragState = null;
 
-  finishedDrag.card.classList.remove('dragging');
+//  finishedDrag.card.classList.remove('dragging');
 
-  if (!finishedDrag.moved) return;
+//  if (!finishedDrag.moved) return;
 
-  ignoreNextCardClick = true;
+//  ignoreNextCardClick = true;
 
-  const node = state.nodes[finishedDrag.personId];
+//  const node = state.nodes[finishedDrag.personId];
 
-  try {
-    await saveNodePosition(node);
+//  try {
+//    await saveNodePosition(node);
 
-    finishedDrag.card.classList.remove('position-saved');
-    void finishedDrag.card.offsetWidth;
-    finishedDrag.card.classList.add('position-saved');
-  } catch (error) {
-    console.error(error);
-    alert(`The new position could not be saved: ${error.message}`);
+//    finishedDrag.card.classList.remove('position-saved');
+//    void finishedDrag.card.offsetWidth;
+//    finishedDrag.card.classList.add('position-saved');
+//  } catch (error) {
+//    console.error(error);
+//    alert(`The new position could not be saved: ${error.message}`);
 
-    node.x = finishedDrag.startingCardX;
-    node.y = finishedDrag.startingCardY;
+//    node.x = finishedDrag.startingCardX;
+//    node.y = finishedDrag.startingCardY;
 
-    renderNode(node);
-    updateWorldSize();
-    updateAllEdges();
-  }
-}
+//    renderNode(node);
+//    updateWorldSize();
+//    updateAllEdges();
+//  }
+//}
 
 
 async function saveNodePosition(node) {
