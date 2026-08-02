@@ -725,11 +725,10 @@ async function fetchRowsFromView() {
 
   while (true) {
     const to = from + PAGE_SIZE - 1;
-
+    
     const { data, error } = await supabase
       .from('qvd_website')
       .select('*')
-      .order('gen', { ascending: true })
       .order('id', { ascending: true })
       .range(from, to);
 
