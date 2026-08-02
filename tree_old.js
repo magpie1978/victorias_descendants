@@ -519,101 +519,14 @@ function parsePartnerTokens(val){
   return s.split(/[;,]/).map(t => t.trim()).filter(Boolean);
 }
 
-/*
-function buildStateFromRows(rows){
-  const nodes={};
-  const filtered = rows.filter(r => typeof r.visible === 'boolean'
-    ? r.visible
-    : String(r.visible||'').trim().toLowerCase() === 'visible');
-  for (const r of filtered){
-    const id = String(r.id);
-    nodes[id] = {
-      id,
-      name: r.name || id,
-      title: r.title || '',
-      title1: r.title1 || '',
-      title2: r.title2 || '',
-      dob: r.dob || '',
-      dod: r.dod || '',
-      biography: r.biography || '',
-      imgSrc: r.img || r.image_url || '',
-      x: toNum(r.x)!=null ? toNum(r.x) : 100,
-      y: toNum(r.y)!=null ? toNum(r.y) : 100,
-      motherId: r.mother_id || null,
-      fatherId: r.father_id || null,
-      parents: Array.isArray(r.parents) ? r.parents.filter(Boolean).map(String) : [],
-      illegitimate: ('illegitimate' in r) ? toBool(r.illegitimate) : false,
-      _partnerTokens: parsePartnerTokens(r.partners)
-    };
-  }
-  const idSet = new Set(Object.keys(nodes));
-  const nameToId = {};
-  for (const id of Object.keys(nodes)){
-    const key = normKey(nodes[id].name);
-    if (key && !(key in nameToId)) nameToId[key] = id;
-  }
-  function resolvePartnerToken(tok){
-    const s = String(tok||'').trim();
-    if (!s) return null;
-    if (idSet.has(s)) return s;
-    return nameToId[normKey(s)] || null;
-  }
-  for (const id of Object.keys(nodes)){
-    const n = nodes[id];
-    const resolved = (n._partnerTokens || []).map(resolvePartnerToken)
-      .filter(pid => pid && pid !== id && idSet.has(pid));
-    n.partners = Array.from(new Set(resolved));
-    delete n._partnerTokens;
-  }
-  for (const id of Object.keys(nodes)){
-    const n = nodes[id];
-    (n.partners||[]).forEach(pid=>{
-      const other = nodes[pid];
-      if (!other) return;
-      if (!Array.isArray(other.partners)) other.partners = [];
-      if (!other.partners.includes(id)) other.partners.push(id);
-    });
-  }
-  const edges=[], triEdges=[];
-  for (const id of Object.keys(nodes)){
-    const child = nodes[id];
-    let parentIds = Array.isArray(child.parents) ? child.parents.filter(Boolean) : [];
-    if (parentIds.length === 0) {
-      if (child.motherId) parentIds.push(child.motherId);
-      if (child.fatherId) parentIds.push(child.fatherId);
-    }
-    parentIds = parentIds.filter(p => nodes[p]);
-    if (parentIds.length >= 2){
-      const p = parentIds.slice(0,2).sort();
-      triEdges.push({ parents:[p[0],p[1]], child:id });
-    } else if (parentIds.length === 1){
-      const p = parentIds[0];
-      const dotted = !!child.illegitimate;
-      const from = p < id ? p : id;
-      const to   = p < id ? id : p;
-      if(!edges.some(e=>e.from===from && e.to===to)){ edges.push({from,to,dotted}); }
-    }
-  }
-  let maxN=0;
-  Object.keys(nodes).forEach(id=>{
-    const m=id.match(/\d+$/); if(m){ const v=parseInt(m[0],10); if(v>maxN) maxN=v; }
-  });
-  return { nodes, edges, triEdges, nextId:maxN+1 };
-}
-*/
 
 function buildStateFromRows(rows){
   const nodes = {};
 
-  // 1) Build nodes
-  const filtered = rows.filter(r =>
-    typeof r.visible === 'boolean'
-      ? r.visible
-      : String(r.visible || '').trim().toLowerCase() === 'visible'
-  );
-
-  for (const r of filtered){
+  // 1) Build nodes from every row returned by qvd_website
+  for (const r of rows){
     const id = String(r.id);
+
     nodes[id] = {
       id,
       name: r.name || id,
@@ -628,129 +541,176 @@ function buildStateFromRows(rows){
       y: toNum(r.y) != null ? toNum(r.y) : 100,
       motherId: r.mother_id || null,
       fatherId: r.father_id || null,
-      // keep whatever is in the parents array for now
-      parents: Array.isArray(r.parents) ? r.parents.filter(Boolean).map(String) : [],
-      illegitimate: ('illegitimate' in r) ? toBool(r.illegitimate) : false,
+      parents: Array.isArray(r.parents)
+        ? r.parents.filter(Boolean).map(String)
+        : [],
+      illegitimate: ('illegitimate' in r)
+        ? toBool(r.illegitimate)
+        : false,
       _partnerTokens: parsePartnerTokens(r.partners)
     };
   }
 
-  // 2) Build lookup helpers (for partner resolution)
-  const idSet   = new Set(Object.keys(nodes));
+  // 2) Build lookup helpers for partner resolution
+  const idSet = new Set(Object.keys(nodes));
   const nameToId = {};
+
   for (const id of Object.keys(nodes)){
     const key = normKey(nodes[id].name);
-    if (key && !(key in nameToId)) nameToId[key] = id;
+
+    if (key && !(key in nameToId)) {
+      nameToId[key] = id;
+    }
   }
 
   function resolvePartnerToken(tok){
     const s = String(tok || '').trim();
+
     if (!s) return null;
-    if (idSet.has(s)) return s;       // matches an id directly
-    return nameToId[normKey(s)] || null; // fall back to name
+    if (idSet.has(s)) return s;
+
+    return nameToId[normKey(s)] || null;
   }
 
   // 3) Resolve partners
   for (const id of Object.keys(nodes)){
     const n = nodes[id];
+
     const resolved = (n._partnerTokens || [])
       .map(resolvePartnerToken)
       .filter(pid => pid && pid !== id && idSet.has(pid));
+
     n.partners = Array.from(new Set(resolved));
     delete n._partnerTokens;
   }
 
-  // Ensure partner arrays are symmetric
+  // Ensure partner relationships work in both directions
   for (const id of Object.keys(nodes)){
     const n = nodes[id];
+
     (n.partners || []).forEach(pid => {
       const other = nodes[pid];
+
       if (!other) return;
-      if (!Array.isArray(other.partners)) other.partners = [];
-      if (!other.partners.includes(id)) other.partners.push(id);
+
+      if (!Array.isArray(other.partners)) {
+        other.partners = [];
+      }
+
+      if (!other.partners.includes(id)) {
+        other.partners.push(id);
+      }
     });
   }
 
-  // 4) Build edges (single-parent) and triEdges (two-parent bus groups)
-  const edges    = [];
+  // 4) Build single-parent and two-parent connectors
+  const edges = [];
   const triEdges = [];
 
   for (const id of Object.keys(nodes)){
     const child = nodes[id];
-
-    // NEW: merge *all* possible parent sources
     let parentIds = [];
 
     if (Array.isArray(child.parents)) {
       parentIds.push(...child.parents.filter(Boolean));
     }
-    if (child.motherId) parentIds.push(child.motherId);
-    if (child.fatherId) parentIds.push(child.fatherId);
 
-    // Remove duplicates, and only keep parents that exist as nodes
-    parentIds = Array.from(new Set(parentIds.map(String)))
-                     .filter(p => nodes[p]);
+    if (child.motherId) {
+      parentIds.push(child.motherId);
+    }
+
+    if (child.fatherId) {
+      parentIds.push(child.fatherId);
+    }
+
+    parentIds = Array.from(
+      new Set(parentIds.map(String))
+    ).filter(parentId => nodes[parentId]);
 
     if (parentIds.length >= 2){
-      // use first two parents for the bus connector
-      const p = parentIds.slice(0, 2).sort();
-      triEdges.push({ parents: [p[0], p[1]], child: id });
-    } else if (parentIds.length === 1){
-      const p = parentIds[0];
-      const dotted = !!child.illegitimate;
-      const from = p < id ? p : id;
-      const to   = p < id ? id : p;
+      const parents = parentIds.slice(0, 2).sort();
 
-      if (!edges.some(e => e.from === from && e.to === to)) {
-        edges.push({ from, to, dotted });
+      triEdges.push({
+        parents: [parents[0], parents[1]],
+        child: id
+      });
+    } else if (parentIds.length === 1){
+      const parentId = parentIds[0];
+      const dotted = Boolean(child.illegitimate);
+      const from = parentId < id ? parentId : id;
+      const to = parentId < id ? id : parentId;
+
+      const alreadyExists = edges.some(edge =>
+        edge.from === from && edge.to === to
+      );
+
+      if (!alreadyExists) {
+        edges.push({
+          from,
+          to,
+          dotted
+        });
       }
     }
   }
 
-  // 5) Work out nextId (for future node-adding features)
+  // 5) Calculate the next available numeric ID
   let maxN = 0;
+
   Object.keys(nodes).forEach(id => {
-    const m = id.match(/\d+$/);
-    if (m) {
-      const v = parseInt(m[0], 10);
-      if (v > maxN) maxN = v;
+    const match = id.match(/\d+$/);
+
+    if (match) {
+      const value = parseInt(match[0], 10);
+
+      if (value > maxN) {
+        maxN = value;
+      }
     }
   });
 
-  return { nodes, edges, triEdges, nextId: maxN + 1 };
+  return {
+    nodes,
+    edges,
+    triEdges,
+    nextId: maxN + 1
+  };
 }
 
 
-
 /* Read from VIEW */
-async function fetchRowsFromView({ onlyVisible = true } = {}){
-  let query = supabase.from('qvd_website').select('*');
-  if (onlyVisible) query = query.eq('visible', 'visible');  
-//  query = query.order('gen', { ascending: true }).order('id', { ascending: true });
-    query = query.order('id', { ascending: true });
-  const { data, error } = await query;
-  if (error) throw error;
+async function fetchRowsFromView(){
+  const { data, error } = await supabase
+    .from('qvd_website')
+    .select('*')
+    .order('id', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
   return data ?? [];
 }
 
 
 /* Load + build + render. Populate dropdown from ALL rows (view) */
 async function loadFromSupabase(){
-  const [rowsVisible, rowsAll] = await Promise.all([
-    fetchRowsFromView({ onlyVisible:true }),
-    fetchRowsFromView({ onlyVisible:false })
-  ]);
+  const rows = await fetchRowsFromView();
 
-  let newState = buildStateFromRows(rowsVisible);
+  const newState = buildStateFromRows(rows);
+
   ensureWorldFitsForState(newState);
+
   state = newState;
   renderAll();
 
-  populateBranchSelect(rowsAll, lastSelectedBranch);
+  populateBranchSelect(rows, lastSelectedBranch);
 
   if (!didApplyDefault) {
     didApplyDefault = true;
+
     const choice = branchSelect.value || '1:1';
+
     if (choice) {
       await applyBranchVisibility(choice);
     }
@@ -823,71 +783,6 @@ async function applyBranchVisibility(selectedId){
   }
 }
 
-/*
-async function applyBranchVisibility(selectedId){
-  if (!selectedId) return;
-
-  lastSelectedBranch = selectedId;
-  localStorage.setItem(BRANCH_PREF_KEY, lastSelectedBranch);
-
-  const tablePositions = supabase.from('qvd_tree_positions');
-
-  branchSelect.disabled = true;
-  try {
-    // 1) Clear visibility for everyone except 1 and 1a
-    {
-      const { error } = await tablePositions
-        .update({ visible: null })
-        .neq('id', '1')
-        .neq('id', '1a');
-
-      if (error) {
-        console.error('Supabase error while clearing visibility:', error);
-        const detail =
-          (typeof error === 'string')
-            ? error
-            : (error.message || error.details || JSON.stringify(error));
-        throw new Error('Failed to clear (NULL) visibility: ' + detail);
-      }
-    }
-
-    // 2) Mark the selected branch as visible
-    {
-      const { error } = await tablePositions
-        .update({ visible: 'visible' })
-        .like('id', `${selectedId}%`);
-
-      if (error) {
-        console.error('Supabase error while setting branch visible:', error);
-        const detail =
-          (typeof error === 'string')
-            ? error
-            : (error.message || error.details || JSON.stringify(error));
-        throw new Error('Failed to set branch visible: ' + detail);
-      }
-    }
-
-    // 3) Always keep 1 and 1a visible (best-effort only)
-    {
-      const { error } = await tablePositions
-        .update({ visible: 'visible' })
-        .in('id', ['1','1a']);
-
-      if (error) {
-        console.warn('Could not force 1/1a visible:', error);
-      }
-    }
-
-    await loadFromSupabase();
-  } catch (err) {
-    console.error('applyBranchVisibility failed:', err);
-    alert(err.message || String(err));
-  } finally {
-    branchSelect.disabled = false;
-    branchSelect.value = lastSelectedBranch;
-  }
-}
-*/
 
 
 /* ===== Init ===== */
