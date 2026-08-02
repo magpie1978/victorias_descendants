@@ -145,46 +145,46 @@ async function initialiseEditorAuthentication() {
 
 
 //LOGON AND LOGOUT CONTROLS
-editorLoginBtn.addEventListener('click', () => {
-  editorLoginError.textContent = '';
-  editorLoginDialog.showModal();
-});
+//editorLoginBtn.addEventListener('click', () => {
+//  editorLoginError.textContent = '';
+//  editorLoginDialog.showModal();
+//});
 
-cancelEditorLogin.addEventListener('click', () => {
-  editorLoginDialog.close();
-});
+//cancelEditorLogin.addEventListener('click', () => {
+//  editorLoginDialog.close();
+//});
 
-editorLoginForm.addEventListener('submit', async event => {
-  event.preventDefault();
+//editorLoginForm.addEventListener('submit', async event => {
+//  event.preventDefault();
 
-  editorLoginError.textContent = '';
+//  editorLoginError.textContent = '';
 
-  const email = document.getElementById('editorEmail').value.trim();
-  const password = document.getElementById('editorPassword').value;
+//  const email = document.getElementById('editorEmail').value.trim();
+//  const password = document.getElementById('editorPassword').value;
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
+//  const { error } = await supabase.auth.signInWithPassword({
+//    email,
+//    password
+//  });
 
-  if (error) {
-    editorLoginError.textContent = 'The email address or password was incorrect.';
-    return;
-  }
+//  if (error) {
+//    editorLoginError.textContent = 'The email address or password was incorrect.';
+//    return;
+//  }
 
-  editorLoginForm.reset();
-  editorLoginDialog.close();
-});
+//  editorLoginForm.reset();
+//  editorLoginDialog.close();
+//});
 
-editorLogoutBtn.addEventListener('click', async () => {
-  const { error } = await supabase.auth.signOut({
-    scope: 'local'
-  });
+//editorLogoutBtn.addEventListener('click', async () => {
+//  const { error } = await supabase.auth.signOut({
+//    scope: 'local'
+//  });
 
-  if (error) {
-    alert(`Logout failed: ${error.message}`);
-  }
-});
+//  if (error) {
+//    alert(`Logout failed: ${error.message}`);
+//  }
+//});
 
 
 
