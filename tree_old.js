@@ -748,34 +748,28 @@ async function applyBranchVisibility(selectedId){
   lastSelectedBranch = selectedId;
   localStorage.setItem(BRANCH_PREF_KEY, lastSelectedBranch);
 
-  const tablePositions = supabase.from('qvd_tree_positions');
-
   branchSelect.disabled = true;
+
   try {
-    {
-      const { error } = await tablePositions
-        .update({ visible: null })
-        .neq('id', '1')
-        .neq('id', '1a');
-      if (error) throw new Error('Failed to clear (NULL) visibility: ' + error.message);
-    }
+    const rows = await fetchRowsFromView();
 
-    {
-      const { error } = await tablePositions
-        .update({ visible: 'visible' })
-        .like('id', `${selectedId}%`);
-      if (error) throw new Error('Failed to set branch visible: ' + error.message);
-    }
+    const filteredRows = rows.filter(row => {
+      const id = String(row.id || '');
 
-    {
-      const { error } = await tablePositions
-        .update({ visible: 'visible' })
-        .in('id', ['1','1a']);
-      if (error) console.warn('Could not force 1/1a visible:', error);
-    }
+      return (
+        id === '1' ||
+        id === '1a' ||
+        id.startsWith(selectedId)
+      );
+    });
 
-    await loadFromSupabase();
+    const newState = buildStateFromRows(filteredRows);
+
+    ensureWorldFitsForState(newState);
+    state = newState;
+    renderAll();
   } catch (err) {
+    console.error('applyBranchVisibility failed:', err);
     alert(err.message || String(err));
   } finally {
     branchSelect.disabled = false;
