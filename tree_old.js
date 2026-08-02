@@ -725,8 +725,9 @@ function buildStateFromRows(rows){
 /* Read from VIEW */
 async function fetchRowsFromView({ onlyVisible = true } = {}){
   let query = supabase.from('qvd_website').select('*');
-  if (onlyVisible) query = query.eq('visible', 'visible');
-  query = query.order('gen', { ascending: true }).order('id', { ascending: true });
+  if (onlyVisible) query = query.eq('visible', 'visible');  
+//  query = query.order('gen', { ascending: true }).order('id', { ascending: true });
+    query = query.order('id', { ascending: true });
   const { data, error } = await query;
   if (error) throw error;
   return data ?? [];
