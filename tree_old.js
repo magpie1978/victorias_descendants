@@ -720,6 +720,17 @@ async function loadFromSupabase(){
 
 /* Populate branch dropdown with exactly 1:1 .. 1:9 */
 function populateBranchSelect(allRows, selectedValue = ''){
+  console.log(
+    'Branch rows:',
+    allRows
+      .filter(r => String(r.id).startsWith('1:'))
+      .map(r => ({
+        id: r.id,
+        cleanedId: String(r.id).trim(),
+        name: r.name
+      }))
+  );
+
   const CHILD_REGEX = /^1:[1-9]$/;
   const kids = (allRows || [])
     .map(r => ({ id: String(r.id).trim(), name: r.name || String(r.id).trim() }))
