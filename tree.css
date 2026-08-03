@@ -248,10 +248,14 @@
     background: var(--panel);
 }
 
+.person.living:hover {
+    background: #162145;
+}
+
 /* Deceased people */
+
 .person.deceased {
-    background: #444444;
-    border-color: #6A6A6A;
+    background: #4A4A4A;
 }
 
 .person.deceased .name {
