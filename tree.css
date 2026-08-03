@@ -1,13 +1,23 @@
-:root {
+/*:root {
     /* defines CSS variables used throughout the page */
-    --bg:#0C1834;
+    /*--bg:#0C1834;
     --panel:#101A3A;
     --accent:#EADFAF;   /* lines, borders, highlights */
-    --text:#FDF2C7;     /* primary text */
-    --muted:#D8CFA0;    /* secondary text */
-    --glass:#1B2748;    /* glassy overlays / dropdowns */
-    --header-h:240px;   /* taller header to fit text + controls */
-  }
+    /*--text:#FDF2C7;     /* primary text */
+    /*--muted:#D8CFA0;    /* secondary text */
+    /*--glass:#1B2748;    /* glassy overlays / dropdowns */
+    /*--header-h:240px;   /* taller header to fit text + controls */
+   /* } */
+
+:root {
+  --bg: #1A2333;          /* Site background */
+  --panel: #284A7A;       /* Living person cards */
+  --accent: #EADFAF;      /* Gold accents */
+  --text: #FDF2C7;        /* Main text */
+  --muted: #D8CFA0;       /* Secondary text */
+  --glass: #24334D;       /* Header/search/drawer */
+  --header-h: 240px;
+}
 
   /* tells the browser to include padding and borders inside width/height calculations (makes layout more predictable */
   * { box-sizing: border-box; }
@@ -234,42 +244,43 @@
     filter .22s ease;
 }
 
-/* Living people */
 .person.living {
-  background: var(--panel);
+    background: var(--panel);
 }
 
 /* Deceased people */
 .person.deceased {
-  background: #000000;
-  border-color: #a8a8a8;
-  color: #ffffff;
+    background: #3A3A3A;
+    border-color: #707070;
+    color: var(--text);
 }
 
 .person.deceased .name {
-  color: #ffffff;
+    color: var(--accent);
 }
 
 .person.deceased .title,
 .person.deceased .title1 {
-  color: #555;
+    color: #D2D2D2;
 }
 
 .person:hover {
-  transform: translateY(-4px) scale(1.015);
-  background-color: #162145;
-  border-color: rgba(234,223,175,0.85);
-  box-shadow:
-    0 14px 28px rgba(0,0,0,.8),
-    0 0 0 1px rgba(234,223,175,.35) inset,
-    0 0 22px rgba(234,223,175,.25);
-  filter: saturate(1.05);
+    transform: translateY(-4px) scale(1.015);
+    background: #34609A;
+    border-color: rgba(234,223,175,.9);
+    box-shadow:
+        0 14px 28px rgba(0,0,0,.75),
+        0 0 0 1px rgba(234,223,175,.35) inset,
+        0 0 22px rgba(234,223,175,.25);
 }
 
 .person.deceased:hover {
-  background: #cfcfcf;
-  border-color: #888;
+    background: #4A4A4A;
+    border-color: #B0B0B0;
 }
+
+
+
   .avatar { width:100%; height:100%; background:#111523; overflow:hidden; }
   .avatar img { width:100%; height:100%; object-fit:cover; display:block; }
   .details {
