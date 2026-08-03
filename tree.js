@@ -435,6 +435,16 @@ function renderNode(n) {
     img.src = FALLBACK_IMAGE;
   };
 
+
+  // Apply different styling depending on whether the person is living
+  if (n.dod && String(n.dod).trim() !== "") {
+    el.classList.add("deceased");
+    el.classList.remove("living");
+  } else {
+    el.classList.add("living");
+    el.classList.remove("deceased");
+  }
+  
   el.style.transform = `translate(${n.x}px, ${n.y}px)`;
 }
 
