@@ -210,60 +210,66 @@
   .dotted { stroke-dasharray: 6 6; } /* Defines a dashed line pattern (used for illegitimate child links, etc.). */
 
   /* the card representing each person */
-  .person {
-    position:absolute; z-index:1;
-    display:grid; grid-template-columns:1fr 2fr;
-    width:360px; height:120px;
-    background:var(--panel);
-    border:0.8px solid var(--accent);
-    border-radius:14px; overflow:hidden;
-    user-select:none; cursor:pointer;
-    box-shadow: 0 6px 18px rgba(0,0,0,.55), 0 0 0 1px rgba(234,223,175,.18) inset;
-    transition:
-      transform .18s ease,
-      box-shadow .22s ease,
-      border-color .22s ease,
-      background-color .22s ease,
-      filter .22s ease;
+.person {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  width: 360px;
+  height: 120px;
+  background: var(--panel);
+  border: 0.8px solid var(--accent);
+  border-radius: 14px;
+  overflow: hidden;
+  user-select: none;
+  cursor: pointer;
+  box-shadow:
+    0 6px 18px rgba(0,0,0,.55),
+    0 0 0 1px rgba(234,223,175,.18) inset;
+  transition:
+    transform .18s ease,
+    box-shadow .22s ease,
+    border-color .22s ease,
+    background-color .22s ease,
+    filter .22s ease;
+}
 
-  .person.deceased {
-    background: #D9D9D9;
-    color: #1F1F1F;
-  }
+/* Living people */
+.person.living {
+  background: var(--panel);
+}
 
-  .person.deceased .name {
-    color: #1F1F1F;
-  }
+/* Deceased people */
+.person.deceased {
+  background: #d9d9d9;
+  border-color: #a8a8a8;
+  color: #1f1f1f;
+}
 
-  .person.deceased .title,
-  .person.deceased .title1 {
-      color: #555;
-  }
+.person.deceased .name {
+  color: #1f1f1f;
+}
 
-  .person.deceased {
-    border-color: #A8A8A8;
-  }
+.person.deceased .title,
+.person.deceased .title1 {
+  color: #555;
+}
 
-  .person:hover {
-    transform: translateY(-4px) scale(1.015);
-    background-color:#162145;
-    border-color: rgba(234,223,175,0.85);
-    box-shadow: 0 14px 28px rgba(0,0,0,.8),
-                0 0 0 1px rgba(234,223,175,.35) inset,
-                0 0 22px rgba(234,223,175,.25);
-    filter: saturate(1.05);
-  }
+.person:hover {
+  transform: translateY(-4px) scale(1.015);
+  background-color: #162145;
+  border-color: rgba(234,223,175,0.85);
+  box-shadow:
+    0 14px 28px rgba(0,0,0,.8),
+    0 0 0 1px rgba(234,223,175,.35) inset,
+    0 0 22px rgba(234,223,175,.25);
+  filter: saturate(1.05);
+}
 
-  .person.deceased:hover {
-    background: #CFCFCF;
-    border-color: #888;
-  }
-
-  .person:focus-visible {
-    outline:2px solid rgba(234,223,175,.85);
-    outline-offset:3px;
-  }
-
+.person.deceased:hover {
+  background: #cfcfcf;
+  border-color: #888;
+}
   .avatar { width:100%; height:100%; background:#111523; overflow:hidden; }
   .avatar img { width:100%; height:100%; object-fit:cover; display:block; }
   .details {
