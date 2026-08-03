@@ -280,6 +280,17 @@
     justify-content:center;
     padding:12px 16px;
   }
+
+.person.living .avatar img {
+    filter: saturate(1.05);
+}
+
+.person.deceased .avatar img {
+    filter:
+        grayscale(100%)
+        brightness(0.92)
+        contrast(1.08);
+}
   
   .name {
     font-weight:600;
