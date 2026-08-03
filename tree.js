@@ -34,7 +34,8 @@ let lastSelectedBranch =
 
 let allTreeRows = [];
 
-
+let editMode = false;
+let ignoreNextCardClick = false;
 
 
 /* drawer (pop-out) references */
