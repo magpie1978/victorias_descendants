@@ -1,16 +1,6 @@
-/*:root {
-    /* defines CSS variables used throughout the page */
-    /*--bg:#0C1834;
-    --panel:#101A3A;
-    --accent:#EADFAF;   /* lines, borders, highlights */
-    /*--text:#FDF2C7;     /* primary text */
-    /*--muted:#D8CFA0;    /* secondary text */
-    /*--glass:#1B2748;    /* glassy overlays / dropdowns */
-    /*--header-h:240px;   /* taller header to fit text + controls */
-   /* } */
-
 :root {
-    --bg: #20252C;
+   /* --bg: #20252C; */
+    --bg: #0C1834
     --panel: #101A3A;
     --accent: #EADFAF;
     --text: #FDF2C7;
