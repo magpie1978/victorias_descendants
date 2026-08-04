@@ -97,7 +97,7 @@
       const to   = from + PAGE_SIZE - 1;
 
       let query = supabase
-        .from('qvd_website')
+        .from('qvd_succession_website')
         .select('order_excl,order_incl,name,title1,title2,dob,img,exclusion_flag,relationship_to_charles,biography');
 
       if (!includeExcluded){
