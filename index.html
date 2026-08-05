@@ -38,13 +38,35 @@
       </div>
     </div> -->
 
-    <!-- Top-right nav buttons -->
+    <!-- Top-right nav buttons --
     <div class="header-buttons">
       <a href="succession.html" class="header-btn">Line of Succession</a>
       <a href="qvd.html" class="header-btn">British Royalty</a>
     </div>
     
   </header>
+  -->
+
+  <!-- Top-right navigation -->
+  <div class="header-buttons">
+  
+    <div class="royal-family-nav">
+      <label for="royalFamilySelect" class="nav-label">
+        Royal Families
+      </label>
+  
+      <select
+        id="royalFamilySelect"
+        class="header-btn royal-select"
+        onchange="if(this.value) window.location.href=this.value;"
+      >
+        <option value="">Select...</option>
+        <option value="united_kingdom.html">United Kingdom</option>
+        <option value="norway.html">Norway</option>
+      </select>
+    </div>
+  
+  </div>
 
   <!-- Scrollable region for the family tree -->
   <div id="scroll" aria-live="polite">
