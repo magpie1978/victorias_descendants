@@ -521,3 +521,113 @@ dialog textarea {
   opacity: 0.6;
   cursor: wait;
 }
+
+
+
+
+/* =====================================================
+   PREVIOUS TITLES HOVER TOOLTIP
+   ===================================================== */
+
+.person {
+  position: absolute;
+}
+
+/* Tooltip container */
+.previous-titles-tooltip {
+  position: absolute;
+
+  left: 50%;
+  top: calc(100% + 12px);
+
+  transform: translateX(-50%) translateY(-4px);
+
+  width: max-content;
+  max-width: 340px;
+  min-width: 220px;
+
+  padding: 14px 16px;
+
+  background: #101d35;
+  color: #ffffff;
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.30);
+
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+
+  text-align: left;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  z-index: 1000;
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0.18s ease;
+}
+
+
+/* Small arrow pointing back at the person card */
+.previous-titles-tooltip::before {
+  content: "";
+
+  position: absolute;
+
+  bottom: 100%;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  border-width: 0 7px 7px 7px;
+  border-style: solid;
+  border-color:
+    transparent
+    transparent
+    #101d35
+    transparent;
+}
+
+
+/* Heading */
+.previous-titles-heading {
+  margin-bottom: 6px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+
+  color: rgba(255, 255, 255, 0.65);
+}
+
+
+/* Actual database contents */
+.previous-titles-text {
+  color: #ffffff;
+}
+
+
+/* Show only when there is previous_titles content */
+.person:hover
+.previous-titles-tooltip.has-content,
+.person:focus
+.previous-titles-tooltip.has-content,
+.person:focus-within
+.previous-titles-tooltip.has-content {
+  opacity: 1;
+  visibility: visible;
+
+  transform:
+    translateX(-50%)
+    translateY(0);
+}
