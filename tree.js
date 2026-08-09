@@ -228,16 +228,39 @@ function drawEdge(e){
 
 function parentsKey(a,b){ var s=[a,b].sort(); return s[0]+'|'+s[1]; }
 function groupTriEdges(){
-  var m={};
+  var m = {};
+
   state.triEdges.forEach(function(t){
-    var k=parentsKey(t.parents[0],t.parents[1]);
-    if(!m[k]) m[k]={parents:[].concat(t.parents).sort(), children:{}};
-    m[k].children[t.child]=true;
+    var k = parentsKey(t.parents[0], t.parents[1]);
+
+    if (!m[k]) {
+      m[k] = {
+        parents: [].concat(t.parents).sort(),
+        children: {},
+        unmarried: false
+      };
+    }
+
+    m[k].children[t.child] = true;
+
+    // If any child belonging to these two parents
+    // is marked illegitimate, display the parents'
+    // relationship as unmarried.
+    if (t.unmarried) {
+      m[k].unmarried = true;
+    }
   });
-  var out=new Map();
+
+  var out = new Map();
+
   Object.keys(m).forEach(function(k){
-    out.set(k,{parents:m[k].parents, children:Object.keys(m[k].children)});
+    out.set(k, {
+      parents: m[k].parents,
+      children: Object.keys(m[k].children),
+      unmarried: m[k].unmarried
+    });
   });
+
   return out;
 }
 
@@ -343,23 +366,92 @@ function updateBusGroup(key, group){
 
 /* ===== Partner connectors ===== */
 function partnerKey(a,b){ const s = [a,b].sort(); return 'pt-' + s[0] + '-' + s[1]; }
-function updatePartner(a,b){
-  const A = cardRect(a), B = cardRect(b); if(!A||!B) return;
-  const id = partnerKey(a,b);
-  const l  = ensureLine(id, 'partner');
-  l.setAttribute('x1', A.cx); l.setAttribute('y1', A.cy);
-  l.setAttribute('x2', B.cx); l.setAttribute('y2', B.cy);
+
+function updatePartner(a, b, unmarried = false) {
+  const A = cardRect(a);
+  const B = cardRect(b);
+
+  if (!A || !B) return;
+
+  const id = partnerKey(a, b);
+  const l = ensureLine(id, 'partner');
+
+  // Mark unmarried parent relationships so CSS can
+  // render the connecting line differently.
+  if (unmarried) {
+    l.classList.add('unmarried');
+  } else {
+    l.classList.remove('unmarried');
+  }
+
+  l.setAttribute('x1', A.cx);
+  l.setAttribute('y1', A.cy);
+  l.setAttribute('x2', B.cx);
+  l.setAttribute('y2', B.cy);
 }
-function updateAllPartners(){
+
+function updateAllPartners() {
+
+  // Remove previously drawn relationship lines.
   svg.querySelectorAll('.partner').forEach(e => e.remove());
+
   const seen = {};
+
+  /*
+   * -------------------------------------------------------
+   * 1. Draw relationships inferred from shared children
+   * -------------------------------------------------------
+   *
+   * This means two known parents will always have a
+   * relationship line between them, even when they are
+   * not listed in the partners field.
+   *
+   * If one of their children has illegitimate = Y,
+   * that relationship line is displayed as unmarried.
+   */
+  const parentGroups = groupTriEdges();
+
+  parentGroups.forEach(function(group) {
+
+    const a = group.parents[0];
+    const b = group.parents[1];
+
+    if (!a || !b) return;
+
+    const k = partnerKey(a, b);
+
+    seen[k] = true;
+
+    updatePartner(
+      a,
+      b,
+      !!group.unmarried
+    );
+  });
+
+
+  /*
+   * -------------------------------------------------------
+   * 2. Draw ordinary partner relationships
+   * -------------------------------------------------------
+   *
+   * These cover couples in the partners field who may
+   * not have children in the currently displayed branch.
+   */
   Object.keys(state.nodes).forEach(id => {
+
     const n = state.nodes[id];
+
     (n.partners || []).forEach(p => {
+
       const k = partnerKey(id, p);
+
+      // Already drawn above as parents of a shared child.
       if (seen[k]) return;
+
       seen[k] = true;
-      updatePartner(id, p);
+
+      updatePartner(id, p, false);
     });
   });
 }
@@ -705,12 +797,23 @@ function buildStateFromRows(rows) {
     parentIds = Array.from(new Set(parentIds.map(String)))
                      .filter(p => nodes[p]);
 
-    if (parentIds.length >= 2){
-      // use first two parents for the bus connector
-      const p = parentIds.slice(0, 2).sort();
-      triEdges.push({ parents: [p[0], p[1]], child: id });
-    } else if (parentIds.length === 1){
-      const p = parentIds[0];
+if (parentIds.length >= 2){
+  // Use first two parents for the normal two-parent bus connector.
+  //
+  // If the child is marked illegitimate, remember that fact
+  // so the relationship line between the two parents can be
+  // displayed as dotted.
+  const p = parentIds.slice(0, 2).sort();
+
+  triEdges.push({
+    parents: [p[0], p[1]],
+    child: id,
+    unmarried: !!child.illegitimate
+  });
+
+} else if (parentIds.length === 1){
+  
+  const p = parentIds[0];
       const dotted = !!child.illegitimate;
       const from = p < id ? p : id;
       const to   = p < id ? id : p;
