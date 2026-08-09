@@ -620,6 +620,7 @@ dialog textarea {
 /* Actual database contents */
 .previous-titles-text {
   color: #ffffff;
+  white-space: pre-line;
 }
 
 
