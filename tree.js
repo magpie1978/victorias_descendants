@@ -395,6 +395,11 @@ function renderNode(n) {
         <div class="title1"></div>
         <div class="title"></div>
       </div>
+
+      <div class="previous-titles-tooltip" role="tooltip">
+        <div class="previous-titles-heading">Previous titles</div>
+        <div class="previous-titles-text"></div>
+      </div>
     `;
 
     cards.appendChild(el);
@@ -424,11 +429,25 @@ function renderNode(n) {
     });
   }
 
-  el.querySelector('.name').textContent = n.name || '';
-  el.querySelector('.title1').textContent = n.title1 || '';
-  el.querySelector('.title').textContent = n.title || '';
+ el.querySelector('.name').textContent = n.name || '';
+ el.querySelector('.title1').textContent = n.title1 || '';
+ el.querySelector('.title').textContent = n.title || '';
 
-  const img = el.querySelector('img');
+ const previousTitlesTooltip =
+  el.querySelector('.previous-titles-tooltip');
+
+ const previousTitlesText =
+  el.querySelector('.previous-titles-text');
+
+ if (n.previousTitles && String(n.previousTitles).trim() !== '') {
+   previousTitlesText.textContent = n.previousTitles;
+   previousTitlesTooltip.classList.add('has-content');
+ } else {
+   previousTitlesText.textContent = '';
+   previousTitlesTooltip.classList.remove('has-content');
+ }
+
+ const img = el.querySelector('img');
 
   img.src = n.imgSrc || FALLBACK_IMAGE;
   img.onerror = function () {
@@ -606,6 +625,7 @@ function buildStateFromRows(rows) {
       title: r.title || '',
       title1: r.title1 || '',
       title2: r.title2 || '',
+      previousTitles: r.previous_titles || '',
       dob: r.dob || '',
       dod: r.dod || '',
       biography: r.biography || '',
