@@ -206,6 +206,9 @@
   }
 
   .partner { stroke-width:2; opacity:.9; }  /* Slightly thinner and more transparent lines for partner connection */
+
+  /* Parents of a child who are not married */
+  .partner.unmarried {stroke-dasharray: 8 6;opacity: 0.9;}
   .dotted { stroke-dasharray: 6 6; } /* Defines a dashed line pattern (used for illegitimate child links, etc.). */
 
   /* the card representing each person */
