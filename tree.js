@@ -227,37 +227,38 @@ function drawEdge(e){
 }
 
 function parentsKey(a,b){ var s=[a,b].sort(); return s[0]+'|'+s[1]; }
-function groupTriEdges(){
-  var m = {};
+function groupTriEdges() {
+  const m = {};
 
-  state.triEdges.forEach(function(t){
-    var k = parentsKey(t.parents[0], t.parents[1]);
+  state.triEdges.forEach(function(t) {
+    const k = parentsKey(t.parents[0], t.parents[1]);
 
     if (!m[k]) {
       m[k] = {
         parents: [].concat(t.parents).sort(),
         children: {},
-        unmarried: false
+        illegitimate: false
       };
     }
 
     m[k].children[t.child] = true;
 
-    // If any child belonging to these two parents
-    // is marked illegitimate, display the parents'
-    // relationship as unmarried.
-    if (t.unmarried) {
-      m[k].unmarried = true;
+    /*
+     * If any child belonging to these parents is marked
+     * illegitimate, make this family connector group dotted.
+     */
+    if (t.illegitimate) {
+      m[k].illegitimate = true;
     }
   });
 
-  var out = new Map();
+  const out = new Map();
 
-  Object.keys(m).forEach(function(k){
+  Object.keys(m).forEach(function(k) {
     out.set(k, {
       parents: m[k].parents,
       children: Object.keys(m[k].children),
-      unmarried: m[k].unmarried
+      illegitimate: m[k].illegitimate
     });
   });
 
@@ -312,12 +313,20 @@ function updateBusGroup(key, group){
   var minX = Math.min.apply(Math, xs);
   var maxX = Math.max.apply(Math, xs);
 
-  var elems = ensureBusElems(key),
-      stem  = elems.stem,
-      bus   = elems.bus;
+var elems = ensureBusElems(key),
+    stem  = elems.stem,
+    bus   = elems.bus;
 
-  // Vertical stem from parents' midpoint to the bus
+/*
+ * Illegitimate family groups use dotted descent lines.
+ */
+if (group.illegitimate) {
+  stem.classList.add('dotted');
+  bus.classList.add('dotted');
+} else {
   stem.classList.remove('dotted');
+  bus.classList.remove('dotted');
+}
   stem.setAttribute('x1', mid.x);
   stem.setAttribute('y1', mid.y);
   stem.setAttribute('x2', mid.x);
@@ -336,6 +345,12 @@ function updateBusGroup(key, group){
   children.forEach(function(c){
     var r = c.r;
     var drop = ensureDropElem(key, c.id);
+
+  if (group.illegitimate) {
+  drop.classList.add('dotted');
+} else {
+  drop.classList.remove('dotted');
+}
 
     // Attach to the nearer edge of the child card
     var anchorY;
@@ -367,7 +382,7 @@ function updateBusGroup(key, group){
 /* ===== Partner connectors ===== */
 function partnerKey(a,b){ const s = [a,b].sort(); return 'pt-' + s[0] + '-' + s[1]; }
 
-function updatePartner(a, b, unmarried = false) {
+function updatePartner(a, b, illegitimate = false) {
   const A = cardRect(a);
   const B = cardRect(b);
 
@@ -376,12 +391,10 @@ function updatePartner(a, b, unmarried = false) {
   const id = partnerKey(a, b);
   const l = ensureLine(id, 'partner');
 
-  // Mark unmarried parent relationships so CSS can
-  // render the connecting line differently.
-  if (unmarried) {
-    l.classList.add('unmarried');
+  if (illegitimate) {
+    l.classList.add('dotted');
   } else {
-    l.classList.remove('unmarried');
+    l.classList.remove('dotted');
   }
 
   l.setAttribute('x1', A.cx);
@@ -392,22 +405,20 @@ function updatePartner(a, b, unmarried = false) {
 
 function updateAllPartners() {
 
-  // Remove previously drawn relationship lines.
+  /*
+   * Remove all currently drawn parent/partner lines.
+   */
   svg.querySelectorAll('.partner').forEach(e => e.remove());
 
   const seen = {};
 
   /*
-   * -------------------------------------------------------
-   * 1. Draw relationships inferred from shared children
-   * -------------------------------------------------------
+   * ---------------------------------------------------
+   * FIRST: draw relationships implied by shared children
+   * ---------------------------------------------------
    *
-   * This means two known parents will always have a
-   * relationship line between them, even when they are
-   * not listed in the partners field.
-   *
-   * If one of their children has illegitimate = Y,
-   * that relationship line is displayed as unmarried.
+   * This ensures that two known parents get a horizontal
+   * connecting line even if they are not listed as partners.
    */
   const parentGroups = groupTriEdges();
 
@@ -425,28 +436,30 @@ function updateAllPartners() {
     updatePartner(
       a,
       b,
-      !!group.unmarried
+      !!group.illegitimate
     );
   });
 
 
   /*
-   * -------------------------------------------------------
-   * 2. Draw ordinary partner relationships
-   * -------------------------------------------------------
+   * ---------------------------------------------------
+   * SECOND: ordinary partners
+   * ---------------------------------------------------
    *
-   * These cover couples in the partners field who may
-   * not have children in the currently displayed branch.
+   * Draw any remaining relationships from the partners
+   * database field.
    */
-  Object.keys(state.nodes).forEach(id => {
+  Object.keys(state.nodes).forEach(function(id) {
 
     const n = state.nodes[id];
 
-    (n.partners || []).forEach(p => {
+    (n.partners || []).forEach(function(p) {
 
       const k = partnerKey(id, p);
 
-      // Already drawn above as parents of a shared child.
+      /*
+       * Don't redraw a relationship already created above.
+       */
       if (seen[k]) return;
 
       seen[k] = true;
@@ -455,6 +468,7 @@ function updateAllPartners() {
     });
   });
 }
+
 
 function updateAllEdges(){
   svg.querySelectorAll('.edge').forEach(function(e){e.remove();});
@@ -798,17 +812,12 @@ function buildStateFromRows(rows) {
                      .filter(p => nodes[p]);
 
 if (parentIds.length >= 2){
-  // Use first two parents for the normal two-parent bus connector.
-  //
-  // If the child is marked illegitimate, remember that fact
-  // so the relationship line between the two parents can be
-  // displayed as dotted.
   const p = parentIds.slice(0, 2).sort();
 
   triEdges.push({
     parents: [p[0], p[1]],
     child: id,
-    unmarried: !!child.illegitimate
+    illegitimate: !!child.illegitimate
   });
 
 } else if (parentIds.length === 1){
