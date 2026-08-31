@@ -26,8 +26,36 @@ var searchInput = document.getElementById('search');
 var suggestBox = document.getElementById('suggest');
 var branchSelect = document.getElementById('branchSelect');
 
-const IS_NORWAY =
-  window.location.pathname.toLowerCase().endsWith('/norway.html');
+const COUNTRY_PAGES = {
+  'norway.html': {
+    country: 'Norway',
+    view: 'qvd_vw_norway'
+  },
+  'sweden.html': {
+    country: 'Sweden',
+    view: 'qvd_vw_sweden'
+  },
+  'denmark.html': {
+    country: 'Denmark',
+    view: 'qvd_vw_denmark'
+  },
+  'spain.html': {
+    country: 'Spain',
+    view: 'qvd_vw_spain'
+  }
+};
+
+/*
+ * Work out which HTML page is currently open.
+ */
+const CURRENT_PAGE =
+  window.location.pathname.split('/').pop().toLowerCase();
+
+/*
+ * Will contain the country configuration on a country page,
+ * or undefined on pages such as united_kingdom.html.
+ */
+const CURRENT_COUNTRY = COUNTRY_PAGES[CURRENT_PAGE];
 
 /* Remember selection across reloads and default to 1:1 */
 const BRANCH_PREF_KEY = 'qv_branch_selected';
@@ -867,8 +895,12 @@ async function fetchRowsFromView() {
   const PAGE_SIZE = 1000;
   const allRows = [];
 
-  const sourceView = IS_NORWAY
-    ? 'qvd_vw_norway'
+  /*
+   * Country pages use their own Supabase view.
+   * All other pages use qvd_website.
+   */
+  const sourceView = CURRENT_COUNTRY
+    ? CURRENT_COUNTRY.view
     : 'qvd_website';
 
   let from = 0;
@@ -916,7 +948,7 @@ async function loadFromSupabase() {
    * Display every row returned by vw_qvd_norway_4.
    * There is no Queen Victoria branch selector.
    */
-  if (IS_NORWAY) {
+ if (CURRENT_COUNTRY) {
     console.log(
       `Norway: displaying ${allTreeRows.length} people`
     );
