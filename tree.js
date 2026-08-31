@@ -26,6 +26,9 @@ var searchInput = document.getElementById('search');
 var suggestBox = document.getElementById('suggest');
 var branchSelect = document.getElementById('branchSelect');
 
+const IS_NORWAY =
+  window.location.pathname.toLowerCase().endsWith('/norway.html');
+
 /* Remember selection across reloads and default to 1:1 */
 const BRANCH_PREF_KEY = 'qv_branch_selected';
 
@@ -864,13 +867,17 @@ async function fetchRowsFromView() {
   const PAGE_SIZE = 1000;
   const allRows = [];
 
+  const sourceView = IS_NORWAY
+    ? 'vw_qvd_norway_4'
+    : 'qvd_website';
+
   let from = 0;
 
   while (true) {
     const to = from + PAGE_SIZE - 1;
-    
+
     const { data, error } = await supabase
-      .from('qvd_website')
+      .from(sourceView)
       .select('*')
       .order('id', { ascending: true })
       .range(from, to);
@@ -883,10 +890,6 @@ async function fetchRowsFromView() {
 
     allRows.push(...rows);
 
-    /*
-     * Fewer than 1,000 rows means that this was
-     * the final batch.
-     */
     if (rows.length < PAGE_SIZE) {
       break;
     }
@@ -894,7 +897,9 @@ async function fetchRowsFromView() {
     from += PAGE_SIZE;
   }
 
-  console.log(`Loaded ${allRows.length} tree records.`);
+  console.log(
+    `Loaded ${allRows.length} tree records from ${sourceView}.`
+  );
 
   return allRows;
 }
@@ -905,6 +910,34 @@ async function fetchRowsFromView() {
 async function loadFromSupabase() {
   allTreeRows = await fetchRowsFromView();
 
+  /*
+   * NORWAY
+   * -------
+   * Display every row returned by vw_qvd_norway_4.
+   * There is no Queen Victoria branch selector.
+   */
+  if (IS_NORWAY) {
+    console.log(
+      `Norway: displaying ${allTreeRows.length} people`
+    );
+
+    const newState = buildStateFromRows(allTreeRows);
+
+    ensureWorldFitsForState(newState);
+
+    state = newState;
+
+    renderAll();
+
+    return;
+  }
+
+  /*
+   * UNITED KINGDOM
+   * --------------
+   * Continue using the existing Queen Victoria
+   * branch-selection system.
+   */
   populateBranchSelect(
     allTreeRows,
     lastSelectedBranch
@@ -917,6 +950,7 @@ async function loadFromSupabase() {
 
   applyBranchSelection(selectedBranch);
 }
+
 
 
 /*
@@ -1148,12 +1182,15 @@ async function init() {
 
 window.addEventListener('resize', function(){ updateWorldSize(); updateAllEdges(); });
 document.getElementById('scroll').addEventListener('scroll', function(){ updateAllEdges(); });
-branchSelect.addEventListener('change', event => {
-  const selectedId = event.target.value;
 
-  if (selectedId) {
-    applyBranchSelection(selectedId);
-  }
-});
+if (branchSelect) {
+  branchSelect.addEventListener('change', event => {
+    const selectedId = event.target.value;
+
+    if (selectedId) {
+      applyBranchSelection(selectedId);
+    }
+  });
+}
 
 init();
