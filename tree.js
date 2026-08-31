@@ -868,7 +868,7 @@ async function fetchRowsFromView() {
   const allRows = [];
 
   const sourceView = IS_NORWAY
-    ? 'qvd_vw_norway_4'
+    ? 'qvd_vw_norway'
     : 'qvd_website';
 
   let from = 0;
