@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" /> <!--Says the page uses UTF-8 encoding (so accents, emoji, etc. work correctly).-->
+    <meta name="viewport" content="width=device-width, initial-scale=1" /> <!-- Makes the page scale properly on phones/tablets (responsive design).-->
+    <title>Greek Monarchy</title>
+
+    <!-- IBM Plex Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="tree.css">
+    <script type="module" src="tree.js"></script>
+    
+    
+  </head>
+  <body>
+
+  <header>
+    <div class="header-left">
+      <h1 class="header-title">Danish Monarchy</h1>
+      <p class="header-desc">
+        Explore the monarchy of Greece
+        Use the search to locate individuals and navigate through generations.
+      </p>
+      <br>
+
+      
+      <!-- DROPDOWN + SEARCH BELOW THE TEXT 
+      <div class="header-controls">
+        <div id="branchwrap" title="Filter by branch (children of Queen Victoria)">
+          <select id="branchSelect" aria-label="Select a branch (children of Queen Victoria)">
+            <option value="">— Select a branch —</option>
+          </select>
+        </div>
+        <div id="searchwrap">
+          <input id="search" type="text" placeholder="Search by name or title…" autocomplete="off" aria-label="Search people by name or title" />
+          <div id="suggest" role="listbox" aria-label="Search suggestions"></div>
+        </div>
+      </div>
+    </div>
+    -->
+
+
+    <!-- SEARCH -->
+    <div class="header-controls">
+      <div id="searchwrap">
+        <input
+          id="search"
+          type="text"
+          placeholder="Search by name or title…"
+          autocomplete="off"
+          aria-label="Search people by name or title"
+        />
+        <div id="suggest" role="listbox" aria-label="Search suggestions"></div>
+      </div>
+    </div>
+
+    
+    <!-- Top-right navigation -->
+    <div class="header-buttons">
+    
+      <div class="royal-family-nav">
+        <label for="royalFamilySelect" class="nav-label">
+          Royal Families
+        </label>
+    
+        <select
+          id="royalFamilySelect"
+          class="header-btn royal-select"
+          onchange="if(this.value) window.location.href=this.value;"
+        >
+          <option value="">Select...</option>
+          <option value="index.html">Home</option>
+          <option value="denmark.html">Denmark</option> 
+          <option value="greece.html">Greece</option> 
+          <option value="norway.html">Norway</option> 
+          <option value="spain.html">Spain</option>
+          <option value="sweden.html">Sweden</option>
+          <option value="united_kingdom.html">United Kingdom</option>       
+        </select>
+      </div>
+    
+    </div>
+
+  </header>
+
+    
+  <!-- Scrollable region for the family tree -->
+  <div id="scroll" aria-live="polite">
+    <div id="world">
+      <svg id="connector" viewBox="0 0 2400 1600" preserveAspectRatio="none"></svg>
+      <div id="cards-root"></div>
+    </div>
+  </div>
+
+  <!-- the left-hand side pop-out for biographies -->
+  <div id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+    <div class="drawer-content">
+      <h2 id="drawerTitle">Details</h2>
+      <div class="drawer-body"></div>
+    </div>
+  </div>
+  
+  <!-- the dim background you click to close the drawer -->
+  <div id="backdrop" aria-hidden="true"></div>
+
+</body>
+</html>
