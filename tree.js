@@ -27,18 +27,26 @@ var suggestBox = document.getElementById('suggest');
 var branchSelect = document.getElementById('branchSelect');
 
 const COUNTRY_PAGES = {
+  'greece.html': {
+    country: 'Greece',
+    view: 'qvd_vw_greece'
+  },
+  
   'norway.html': {
     country: 'Norway',
     view: 'qvd_vw_norway'
   },
+  
   'sweden.html': {
     country: 'Sweden',
     view: 'qvd_vw_sweden'
   },
+  
   'denmark.html': {
     country: 'Denmark',
     view: 'qvd_vw_denmark'
   },
+  
   'spain.html': {
     country: 'Spain',
     view: 'qvd_vw_spain'
