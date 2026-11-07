@@ -71,7 +71,7 @@ const CURRENT_COUNTRY = COUNTRY_PAGES[CURRENT_PAGE];
 const BRANCH_PREF_KEY = 'qv_branch_selected';
 
 let lastSelectedBranch =
-  CURRENT_PAGE === 'united_kingdom.html'
+  (CURRENT_PAGE === 'united_kingdom.html' || CURRENT_PAGE === 'index.html' || CURRENT_PAGE === '')
     ? '1:1'
     : (localStorage.getItem(BRANCH_PREF_KEY) || '1:1');
 
