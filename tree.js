@@ -65,11 +65,15 @@ const CURRENT_PAGE =
  */
 const CURRENT_COUNTRY = COUNTRY_PAGES[CURRENT_PAGE];
 
-/* Remember selection across reloads and default to 1:1 */
+/* Default the United Kingdom page to Edward VII (1:1) on every visit.
+ * Other pages retain the previously selected branch preference.
+ */
 const BRANCH_PREF_KEY = 'qv_branch_selected';
 
 let lastSelectedBranch =
-  localStorage.getItem(BRANCH_PREF_KEY) || '1:1';
+  CURRENT_PAGE === 'united_kingdom.html'
+    ? '1:1'
+    : (localStorage.getItem(BRANCH_PREF_KEY) || '1:1');
 
 let allTreeRows = [];
 
