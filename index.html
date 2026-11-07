@@ -24,7 +24,7 @@
       <br>
 
       
-      <!-- DROPDOWN + SEARCH BELOW THE TEXT 
+      <!-- DROPDOWN + SEARCH BELOW THE TEXT -->
       <div class="header-controls">
         <div id="branchwrap" title="Filter by branch (children of Queen Victoria)">
           <select id="branchSelect" aria-label="Select a branch (children of Queen Victoria)">
@@ -36,43 +36,38 @@
           <div id="suggest" role="listbox" aria-label="Search suggestions"></div>
         </div>
       </div>
-    </div> -->
+    </div>
 
-    <!-- Top-right nav buttons --
+
+    <!-- Top-right navigation -->
     <div class="header-buttons">
-      <a href="succession.html" class="header-btn">Line of Succession</a>
-      <a href="qvd.html" class="header-btn">British Royalty</a>
-    </div>
     
-  </header>
-  -->
-
-  <!-- Top-right navigation -->
-  <div class="header-buttons">
-  
-    <div class="royal-family-nav">
-      <label for="royalFamilySelect" class="nav-label">
-        Royal Families
-      </label>
-      <br>
-  
-      <select
-        id="royalFamilySelect"
-        class="header-btn royal-select"
-        onchange="if(this.value) window.location.href=this.value;"
-      >
-        <option value="">Select...</option>
-        <option value="index.html">Home</option>
-        <option value="denmark.html">Denmark</option>
-        <option value="norway.html">Norway</option>
-        <option value="spain.html">Spain</option>
-        <option value="sweden.html">Sweden</option>
-        <option value="united_kingdom.html" selected>United Kingdom</option>
-      </select>
+      <div class="royal-family-nav">
+        <label for="royalFamilySelect" class="nav-label">
+          Royal Families
+        </label>
+    
+        <select
+          id="royalFamilySelect"
+          class="header-btn royal-select"
+          onchange="if(this.value) window.location.href=this.value;"
+        >
+          <option value="">Select...</option>
+          <option value="index.html">Home</option>
+          <option value="denmark.html">Denmark</option>
+          <option value="greece.html">Greece</option> 
+          <option value="norway.html">Norway</option>
+          <option value="spain.html">Spain</option>
+          <option value="sweden.html">Sweden</option>
+          <option value="united_kingdom.html" selected>United Kingdom</option>
+        </select>
+      </div>
+    
     </div>
-  
-  </div>
 
+  </header>
+
+    
   <!-- Scrollable region for the family tree -->
   <div id="scroll" aria-live="polite">
     <div id="world">
@@ -81,13 +76,13 @@
     </div>
   </div>
 
-  <!-- the left-hand side pop-out for biographies 
+  <!-- the left-hand side pop-out for biographies -->
   <div id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
     <div class="drawer-content">
       <h2 id="drawerTitle">Details</h2>
       <div class="drawer-body"></div>
     </div>
-  </div> -->
+  </div>
   
   <!-- the dim background you click to close the drawer -->
   <div id="backdrop" aria-hidden="true"></div>
